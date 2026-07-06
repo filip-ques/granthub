@@ -1,0 +1,44 @@
+/* Grant Monitor — nadstavba nad zdieľaným app.css (viac vzduchu, hlavne detail výzvy) */
+
+/* Detail výzvy */
+.vyzva-detail { padding-bottom: 1.5rem; }
+.vyzva-detail > .tender-meta { margin-bottom: 1rem !important; }
+.vyzva-detail h1 { margin-bottom: .7em; }
+.vyzva-detail .lead { margin-bottom: 1.8rem; line-height: 1.6; }
+.vyzva-detail h2 {
+  margin-top: 2.6rem;
+  margin-bottom: 1rem;
+  padding-bottom: .45rem;
+  border-bottom: 2px solid var(--line);
+}
+.vyzva-detail p { line-height: 1.65; }
+.vyzva-detail ul { margin: 0 0 1.2rem; padding-left: 1.3rem; }
+.vyzva-detail ul li { margin-bottom: .55rem; line-height: 1.6; }
+
+/* Tabuľky v detaile — redšie riadky */
+.vyzva-detail table.t { margin-bottom: .5rem; }
+.vyzva-detail table.t th,
+.vyzva-detail table.t td { padding: .85rem .7rem; line-height: 1.55; }
+.vyzva-detail table.t th[scope="row"] { width: 220px; }
+
+/* Väčší rozostup stĺpcov a sekcií */
+.layout-detail { gap: 2.5rem; }
+.vyzva-similar { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.vyzva-similar h2 { margin-bottom: 1.2rem; }
+
+/* Bočné CTA karty — viac paddingu a vzduchu */
+.layout-detail aside .searchcard { padding: 1.75rem; margin-bottom: 1.4rem; }
+.layout-detail aside .searchcard h2 { font-size: 1.15rem; margin: .6rem 0 .5rem; }
+.layout-detail aside .searchcard .small { line-height: 1.55; }
+
+/* Karty výziev v zozname — trochu vzduchu navyše */
+.tender { padding: 1.5rem 1.6rem; margin-bottom: 1.2rem; }
+.tender h3 { line-height: 1.4; }
+.tender .buyer { line-height: 1.55; margin-bottom: .8rem; }
+.tender-meta { gap: .5rem 1.1rem; line-height: 1.5; }
+.tender-foot { margin-top: 1.1rem; padding-top: 1rem; }
+
+@media (max-width: 980px) {
+  .vyzva-detail h2 { margin-top: 2rem; }
+  .vyzva-detail table.t th[scope="row"] { width: auto; }
+}

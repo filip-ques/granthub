@@ -1,0 +1,90 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span>Cenník</nav>
+  <div class="section-head center" style="margin-top:.5rem">
+    <span class="eyebrow">Cenník</span>
+    <h1>Monitoring zdarma. Platíte len za výsledok.</h1>
+    <p>Databáza grantov aj tendrov, radar, strážcovia aj firemná zóna sú <strong>zadarmo</strong> — bez viazanosti a bez platobnej karty. Platíte len vtedy, keď si k vybranej výzve či tendru objednáte našu odbornú pomoc.</p>
+  </div>
+
+  <div class="card price-card center">
+    <span class="ribbon">Zdarma</span>
+    <h2 style="margin-top:0">GrantHub</h2>
+    <div class="amount">0 €<small> / navždy</small></div>
+    <p class="muted small">Žiadna platobná karta, žiadna viazanosť.</p>
+    <ul class="price-list" style="text-align:left">
+      <li>Kompletná databáza grantových výziev vrátane vyhlasovateľa a súm</li>
+      <li>Verejné zákazky z európskeho vestníka TED s filtrami a CPV</li>
+      <li>Radar — e-mailové upozornenia na nové granty aj tendre</li>
+      <li>Strážcovia trhu (uložené vyhľadávania tendrov)</li>
+      <li>Pipeline rozpracovaných ponúk a ukladanie výziev</li>
+      <li>Firemná zóna s katalógom produktov a automatickým párovaním</li>
+      <li>Podpora v slovenčine</li>
+    </ul>
+    <a href="/registracia" class="btn btn-primary btn-block">Registrovať sa zdarma</a>
+    <p class="small muted mt1 mb0">Vytvorenie účtu trvá menej ako minútu — stačí e-mail.</p>
+  </div>
+
+  <div class="section-head center" style="margin-top:3rem">
+    <span class="eyebrow">Odborné služby — granty</span>
+    <h2>Keď chcete grant naozaj získať</h2>
+    <p>Jednorazové služby k jednej konkrétnej výzve. Teraz so zľavou <strong>−50 %</strong>.</p>
+  </div>
+  <div class="grid grid-2">
+    <% for (const s of SERVICES.filter(x => x.kind === 'grant')) { %>
+      <div class="card price-card" style="max-width:none;margin:0">
+        <span class="ribbon">−50 %</span>
+        <h3 style="margin-top:0"><%= s.name %></h3>
+        <p class="muted small"><%= s.lead %></p>
+        <div class="amount"><small>od</small> <%= s.price.toLocaleString('sk-SK') %> € <small><span style="text-decoration:line-through"><%= s.origPrice.toLocaleString('sk-SK') %> €</span></small></div>
+        <p class="muted small mb0" style="margin-top:-.3rem">jednorazovo za jednu výzvu · bez DPH · finálna cena podľa rozsahu</p>
+        <ul class="price-list" style="text-align:left">
+          <% for (const i of s.includes) { %><li><%= i %></li><% } %>
+        </ul>
+        <a href="/objednavka?sluzba=<%= s.slug %>" class="btn btn-primary btn-block">Objednať</a>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="section-head center" style="margin-top:3rem">
+    <span class="eyebrow">Odborné služby — tendre</span>
+    <h2>Keď sa rozhodnete ísť do zákazky, pomôžeme vám vyhrať</h2>
+    <p>Jednorazové služby k jednému konkrétnemu tendru. Teraz so zľavou <strong>−50 %</strong>.</p>
+  </div>
+  <div class="grid grid-2">
+    <% for (const s of SERVICES.filter(x => x.kind === 'tender')) { %>
+      <div class="card price-card" style="max-width:none;margin:0">
+        <span class="ribbon">−50 %</span>
+        <h3 style="margin-top:0"><%= s.name %></h3>
+        <p class="muted small"><%= s.lead %></p>
+        <div class="amount"><small>od</small> <%= s.price.toLocaleString('sk-SK') %> € <small><span style="text-decoration:line-through"><%= s.origPrice.toLocaleString('sk-SK') %> €</span></small></div>
+        <p class="muted small mb0" style="margin-top:-.3rem">jednorazovo za jeden tender · bez DPH · finálna cena podľa rozsahu</p>
+        <ul class="price-list" style="text-align:left">
+          <% for (const i of s.includes) { %><li><%= i %></li><% } %>
+        </ul>
+        <a href="/objednavka?sluzba=<%= s.slug %>" class="btn btn-primary btn-block">Objednať</a>
+      </div>
+    <% } %>
+  </div>
+  <p class="center small muted mt2">Ceny sú za jednu konkrétnu výzvu alebo tender. Potrebujete viac projektov alebo dlhodobú spoluprácu? <a href="/kontakt">Ozvite sa nám</a> a pripravíme ponuku na mieru.</p>
+
+  <div class="section-head center" style="margin-top:3rem">
+    <h2>Časté otázky</h2>
+  </div>
+  <div style="max-width:760px;margin:0 auto 2rem">
+    <details class="acc"><summary>Je monitoring naozaj celý zadarmo?</summary>
+      <p class="mb0 muted">Áno. Databázy grantov aj tendrov, radar, strážcovia aj firemná zóna sú zadarmo natrvalo — bez viazanosti a bez platobnej karty. Platíte len vtedy, ak si objednáte odbornú službu ku konkrétnej výzve alebo tendru.</p></details>
+    <details class="acc"><summary>Čo znamená „overenie splnenia podmienok tendra"?</summary>
+      <p class="mb0 muted">Prejdeme súťažné podklady konkrétneho tendra a posúdime, či vaša firma spĺňa podmienky účasti — referencie, obrat, certifikáty, technickú a odbornú spôsobilosť. Dostanete jasné odporúčanie, či sa do zákazky oplatí ísť, ešte predtým, než investujete čas do ponuky.</p></details>
+    <details class="acc"><summary>Čo obsahuje „vytvorenie podania na tender"?</summary>
+      <p class="mb0 muted">Pripravíme celú ponuku na kľúč — kompletizáciu podkladov, vyplnenie formulárov a čestných vyhlásení, kontrolu úplnosti a elektronické podanie v príslušnom systéme. Postaráme sa o formálnu stránku, aby vás nevyradili pre administratívnu chybu.</p></details>
+    <details class="acc"><summary>Ako fungujú grantové služby?</summary>
+      <p class="mb0 muted">Napasovanie na výzvu (od 499 €) overí, či vaša organizácia a zámer sedia na konkrétnu výzvu. Vypracovanie projektu (od 999 €) je kompletná žiadosť na kľúč — zámer, rozpočet, prílohy aj podanie. Konečnú cenu potvrdíme vopred.</p></details>
+    <details class="acc"><summary>Odkiaľ pochádzajú údaje?</summary>
+      <p class="mb0 muted">Granty preberáme z ITMS open data (eurofondy, Program Slovensko) a z oficiálnych zdrojov vyhlasovateľov. Verejné zákazky agregujeme z európskeho vestníka TED. Údaje sa aktualizujú automaticky každých 6 hodín.</p></details>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

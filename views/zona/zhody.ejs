@@ -1,0 +1,25 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('menu', { active: 'produkty' }) %>
+
+  <div>
+    <nav class="breadcrumb" style="padding-top:0" aria-label="Omrvinková navigácia"><a href="/ucet/produkty">Produkty</a><span class="sep">›</span><%= product.name %></nav>
+    <h1 style="font-size:1.7rem">Zhody pre „<%= product.name %>“</h1>
+    <p class="muted">Otvorené tendre zodpovedajúce kľúčovým slovám alebo CPV kódom produktu.</p>
+
+    <% if (!matches.length) { %>
+      <div class="empty">
+        <h3>Žiadne zhody</h3>
+        <p><%= (product.keywords || product.cpv_prefixes) ? 'Momentálne nesedí žiadny otvorený tender. Skúste pridať širšie kľúčové slová alebo CPV divíziu.' : 'Produkt nemá zadané kľúčové slová ani CPV — doplňte ich v úprave produktu.' %></p>
+      </div>
+    <% } %>
+
+    <% for (const t of matches) { %>
+      <%- include('../partials/tender-card', { t }) %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

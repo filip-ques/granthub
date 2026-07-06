@@ -1,0 +1,17 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container" style="padding-top:1.5rem">
+  <div class="auth-wrap" style="max-width:640px">
+    <div class="alert alert-success" role="alert">
+      <strong>Objednávka prijatá.</strong> Ďakujeme, <%= values.name %>.
+    </div>
+    <div class="panel">
+      <p>Vašu nezáväznú objednávku služby <strong><%= service.name %></strong><% if (vyzva) { %> k výzve <strong><%= vyzva.title %></strong><% } %><% if (tender) { %> k tendru <strong><%= tender.title %></strong><% } %> sme prijali.</p>
+      <p>Potvrdenie sme poslali na <strong><%= values.email %></strong> a čoskoro sa vám ozveme s ďalším postupom.</p>
+      <a class="btn btn-primary" href="/vyzvy">Späť na výzvy</a>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,42 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('partials/menu', { active: 'vyzvy' }) %>
+
+  <div>
+    <div class="panel-head">
+      <h1 style="font-size:1.7rem;margin:0">Výzvy</h1>
+      <a class="btn btn-primary btn-sm" href="/admin/vyzvy/nova">+ Nová manuálna výzva</a>
+    </div>
+
+    <form method="get" action="/admin/vyzvy" class="admin-search mt1" style="margin-bottom:1rem">
+      <input type="search" name="q" value="<%= q %>" placeholder="hľadať podľa názvu, slugu, vyhlasovateľa">
+      <button class="btn btn-ghost btn-sm" type="submit">Hľadať</button>
+    </form>
+
+    <table class="t t--cards">
+      <thead>
+        <tr><th>Výzva</th><th>Vyhlasovateľ</th><th>Oblasť</th><th>Stav</th><th>Zdroj</th><th data-label=""></th></tr>
+      </thead>
+      <tbody>
+        <% for (const v of vyzvy) { %>
+          <tr>
+            <td data-label="Výzva"><a href="/vyzvy/<%= v.slug %>" target="_blank"><%= v.title.length > 70 ? v.title.slice(0, 70) + '…' : v.title %></a></td>
+            <td data-label="Vyhlasovateľ" class="small"><%= v.provider || '—' %></td>
+            <td data-label="Oblasť" class="small"><%= v.category %></td>
+            <td data-label="Stav"><span class="badge-stage <%= v.status === 'otvorena' ? 's-won' : 's-lost' %>"><%= v.status %></span></td>
+            <td data-label="Zdroj"><span class="badge-stage <%= v.source === 'itms' ? 's-submitted' : 's-preparing' %>"><%= v.source %></span></td>
+            <td data-label="">
+              <a class="btn btn-ghost btn-sm" href="/admin/vyzvy/<%= v.id %>">Upraviť</a>
+              <form method="post" action="/admin/vyzvy/<%= v.id %>/zmazat" data-confirm="Naozaj zmazať výzvu?" style="display:inline"><button class="btn btn-danger btn-sm">Zmazať</button></form>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+    <p class="small muted">Výzvy so zdrojom <b>itms</b> aktualizuje ingest automaticky — ručné úpravy textov prepíše pri ďalšom behu. Manuálne výzvy (<b>manual</b>) ingest nikdy nemení.</p>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,58 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('menu', { active: 'produkty' }) %>
+
+  <div>
+    <h1 style="font-size:1.7rem">Produkty a služby firmy</h1>
+    <p class="muted">Zadajte, čo vaša firma ponúka — kľúčové slová a CPV divízie. Automaticky k tomu napárujeme aktuálne tendre.</p>
+
+    <form method="post" action="/ucet/produkty" class="panel">
+      <div class="field">
+        <label for="p-name">Názov produktu / služby *</label>
+        <input id="p-name" name="name" type="text" required placeholder="napr. Elektroinštalačné práce">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="p-kw">Kľúčové slová</label>
+          <input id="p-kw" name="keywords" type="text" placeholder="elektroinštalácia, rozvádzač, bleskozvod">
+          <div class="hint">oddeľte čiarkou — hľadajú sa v názve a popise zákazky</div>
+        </div>
+        <div class="field">
+          <label for="p-cpv">CPV divízie / prefixy</label>
+          <input id="p-cpv" name="cpv_prefixes" type="text" placeholder="45, 09310000">
+          <div class="hint">oddeľte čiarkou — stačí prvé 2 číslice divízie</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" type="submit">Pridať produkt</button>
+    </form>
+
+    <% if (!products.length) { %>
+      <div class="empty">
+        <h3>Zatiaľ žiadne produkty</h3>
+        <p>Pridajte prvý produkt a uvidíte, ktoré tendre naň sedia.</p>
+      </div>
+    <% } else { %>
+      <% for (const p of products) { %>
+        <div class="panel">
+          <div class="panel-head">
+            <h3 style="margin:0"><%= p.name %></h3>
+            <span class="small muted">pridané <%= fmtDate(p.created_at) %></span>
+          </div>
+          <div class="tender-meta" style="margin-bottom:.8rem">
+            <% if (p.keywords) { %><span class="meta-item"><strong>Slová:</strong> <%= p.keywords %></span><% } %>
+            <% if (p.cpv_prefixes) { %><span class="meta-item"><strong>CPV:</strong> <span class="mono"><%= p.cpv_prefixes %></span></span><% } %>
+            <% if (!p.keywords && !p.cpv_prefixes) { %><span class="meta-item muted">bez kritérií — doplňte slová alebo CPV</span><% } %>
+          </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <a class="btn btn-primary btn-sm" href="/ucet/produkty/<%= p.id %>/zhody">Zobraziť zhody</a>
+            <form method="post" action="/ucet/produkty/<%= p.id %>/zmazat" data-confirm="Zmazať produkt?"><button class="btn btn-danger btn-sm">Zmazať</button></form>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

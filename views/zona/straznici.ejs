@@ -1,0 +1,43 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('menu', { active: 'straznici' }) %>
+
+  <div>
+    <h1 style="font-size:1.7rem">Strážcovia trhu</h1>
+    <p class="muted">Uložené vyhľadávania tendrov. Keď pribudne zákazka zodpovedajúca strážcovi so zapnutými notifikáciami, príde vám e-mail v najbližšom digeste.</p>
+
+    <% if (!searches.length) { %>
+      <div class="empty">
+        <h3>Zatiaľ žiadni strážcovia</h3>
+        <p>Nastavte si filtre v <a href="/tendre">katalógu tendrov</a> a uložte hľadanie ako strážcu.</p>
+      </div>
+    <% } else { %>
+      <% for (const s of searches) { %>
+        <div class="panel">
+          <div class="panel-head">
+            <h3 style="margin:0"><%= s.name %></h3>
+            <span class="badge-stage <%= s.notify ? 's-won' : 's-lost' %>"><%= s.notify ? 'notifikácie zapnuté' : 'notifikácie vypnuté' %></span>
+          </div>
+          <div class="tender-meta" style="margin-bottom:.8rem">
+            <% if (s.q) { %><span class="meta-item"><strong>Slovo:</strong> <%= s.q %></span><% } %>
+            <% if (s.industry) { %><span class="meta-item"><strong>Odvetvie:</strong> <%= industryLabel(s.industry) %></span><% } %>
+            <% if (s.region_code) { %><span class="meta-item"><strong>Kraj:</strong> <%= (TENDER_REGIONS.find(r => r.code === s.region_code) || {}).name || s.region_code %></span><% } %>
+            <% if (s.cpv) { %><span class="meta-item"><strong>CPV:</strong> <span class="mono"><%= s.cpv %></span></span><% } %>
+            <% if (s.min_value) { %><span class="meta-item"><strong>Min. hodnota:</strong> <%= fmtEur(s.min_value) %></span><% } %>
+            <% if (!s.q && !s.industry && !s.region_code && !s.cpv && !s.min_value) { %><span class="meta-item muted">bez filtrov — všetky tendre</span><% } %>
+          </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <% const u = new URLSearchParams(); if (s.q) u.set('q', s.q); if (s.industry) u.set('odvetvie', s.industry); if (s.region_code) u.set('kraj', s.region_code); if (s.cpv) u.set('cpv', s.cpv); if (s.min_value) u.set('min_hodnota', s.min_value); %>
+            <a class="btn btn-primary btn-sm" href="/tendre?<%= u.toString() %>">Spustiť hľadanie</a>
+            <form method="post" action="/ucet/straznici/<%= s.id %>/notify"><button class="btn btn-ghost btn-sm"><%= s.notify ? 'Vypnúť notifikácie' : 'Zapnúť notifikácie' %></button></form>
+            <form method="post" action="/ucet/straznici/<%= s.id %>/zmazat" data-confirm="Zmazať strážcu?"><button class="btn btn-danger btn-sm">Zmazať</button></form>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

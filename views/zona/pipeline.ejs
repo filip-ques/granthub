@@ -1,0 +1,45 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('menu', { active: 'pipeline' }) %>
+
+  <div>
+    <h1 style="font-size:1.7rem">Moje tendre</h1>
+    <p class="muted">Prehľad rozpracovaných ponúk — od sledovania po výsledok. Zákazky pridáte tlačidlom „Uložiť zákazku“ na detaile tendra.</p>
+
+    <% if (!items.length) { %>
+      <div class="empty">
+        <h3>Zatiaľ žiadne sledované tendre</h3>
+        <p><a href="/tendre">Prezrite si tendre</a> a uložte si tie, o ktoré sa chcete uchádzať.</p>
+      </div>
+    <% } else { %>
+      <div class="board" style="grid-template-columns:repeat(5, 1fr)">
+        <% for (const st of STAGES) { const inStage = items.filter(i => i.stage === st.key); %>
+          <div class="col">
+            <h3><%= st.label %> (<%= inStage.length %>)</h3>
+            <% for (const i of inStage) { %>
+              <div class="card" style="border-left:4px solid var(--blue)">
+                <a href="/tendre/<%= i.id %>" style="font-weight:700;font-size:.85rem;line-height:1.35;display:block;margin-bottom:.4rem"><%= i.title.length > 70 ? i.title.slice(0, 70) + '…' : i.title %></a>
+                <div class="small muted" style="margin-bottom:.5rem">
+                  <%= i.buyer_name ? (i.buyer_name.length > 40 ? i.buyer_name.slice(0, 40) + '…' : i.buyer_name) : '' %>
+                  <% if (i.deadline) { %><br>lehota <%= fmtDate(i.deadline) %><% } %>
+                </div>
+                <% if (i.note) { %><p class="small" style="margin:.3rem 0;white-space:pre-wrap"><%= i.note %></p><% } %>
+                <form method="post" action="/ucet/pipeline/<%= i.id %>" style="display:flex;flex-direction:column;gap:.35rem">
+                  <select name="stage" style="min-height:34px;font-size:.8rem;padding:.2rem .4rem">
+                    <% for (const s2 of STAGES) { %><option value="<%= s2.key %>" <%= i.stage === s2.key ? 'selected' : '' %>><%= s2.label %></option><% } %>
+                  </select>
+                  <input type="text" name="note" value="<%= i.note || '' %>" placeholder="poznámka" style="min-height:34px;font-size:.8rem;padding:.2rem .4rem">
+                  <button class="btn btn-ghost btn-sm" type="submit">Uložiť</button>
+                </form>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

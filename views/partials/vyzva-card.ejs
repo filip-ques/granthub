@@ -1,0 +1,34 @@
+<%
+// očakáva: v (výzva)
+const dl = daysLeft(v.deadline);
+const dlCls = dl == null ? 'muted' : dl < 0 ? 'closed' : dl <= 7 ? 'urgent' : dl <= 30 ? 'soon' : 'ok';
+%>
+<article class="tender">
+  <div class="tender-meta" style="margin-bottom:.5rem">
+    <span class="tag brand"><%= v.category %></span>
+    <% if (v.provider) { %><span class="tag"><%= v.provider %></span><% } %>
+  </div>
+  <h3><a href="/vyzvy/<%= v.slug %>"><%= v.title %></a></h3>
+  <p class="buyer"><%= v.summary %></p>
+  <div class="tender-meta">
+    <span class="meta-item"><strong>Výška grantu:</strong>
+      <% if (v.amount_min && v.amount_max) { %><%= fmtEur(v.amount_min) %> – <%= fmtEur(v.amount_max) %>
+      <% } else if (v.amount_max) { %>do <%= fmtEur(v.amount_max) %>
+      <% } else { %>nie je určená<% } %>
+    </span>
+    <span class="meta-item"><strong>Žiadatelia:</strong> <%= v.applicants %></span>
+    <span class="meta-item"><strong>Územie:</strong> <%= v.regions %></span>
+  </div>
+  <div class="tender-foot">
+    <span class="dl <%= dlCls %>">
+      <% if (v.deadline) { %>
+        Uzávierka <%= fmtDate(v.deadline) %><% if (dl != null && dl >= 0) { %> · <%= fmtDays(dl) %><% } else if (dl != null) { %> · uzavretá<% } %>
+      <% } else { %>
+        <%= v.deadline_note || 'Termín neurčený' %>
+      <% } %>
+    </span>
+    <span style="display:flex;gap:.5rem;align-items:center">
+      <a class="btn btn-ghost btn-sm" href="/vyzvy/<%= v.slug %>">Detail výzvy</a>
+    </span>
+  </div>
+</article>

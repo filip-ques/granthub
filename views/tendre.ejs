@@ -1,0 +1,117 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span>Tendre</nav>
+  <div class="layout">
+    <aside class="filters">
+      <button type="button" class="btn btn-ghost filters-toggle" aria-controls="filtersBody" aria-expanded="false">
+        <span>Filtre zákaziek</span><span class="fx" aria-hidden="true">▾</span>
+      </button>
+      <div class="filters-body" id="filtersBody">
+        <form action="/tendre" method="get">
+          <h2>Filtre</h2>
+          <input type="hidden" name="sort" value="<%= filters.sort %>">
+          <div class="field">
+            <label for="f-q">Kľúčové slovo</label>
+            <input id="f-q" type="text" name="q" value="<%= filters.q %>" placeholder="hľadať v názve a popise">
+          </div>
+          <div class="field">
+            <label for="f-odv">Odvetvie</label>
+            <select id="f-odv" name="odvetvie" data-autosubmit>
+              <option value="">Všetky odvetvia</option>
+              <% for (const i of INDUSTRIES) { %><option value="<%= i.key %>" <%= filters.odvetvie === i.key ? 'selected' : '' %>><%= i.label %></option><% } %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-kraj">Región</label>
+            <select id="f-kraj" name="kraj" data-autosubmit>
+              <option value="">Celé Slovensko</option>
+              <% for (const r of TENDER_REGIONS) { %><option value="<%= r.code %>" <%= filters.kraj === r.code ? 'selected' : '' %>><%= r.name %></option><% } %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-cpv">CPV kód</label>
+            <input id="f-cpv" type="text" name="cpv" value="<%= filters.cpv %>" placeholder="napr. 45 alebo 45261000">
+          </div>
+          <div class="field">
+            <label for="f-val">Minimálna hodnota (€)</label>
+            <input id="f-val" type="number" name="min_hodnota" value="<%= filters.min_hodnota %>" placeholder="0" min="0" step="1000">
+          </div>
+          <div class="field">
+            <label for="f-stav">Stav</label>
+            <select id="f-stav" name="stav" data-autosubmit>
+              <option value="otvorene" <%= filters.stav === 'otvorene' ? 'selected' : '' %>>Len otvorené</option>
+              <option value="vsetky" <%= filters.stav === 'vsetky' ? 'selected' : '' %>>Všetky</option>
+              <option value="uzavrete" <%= filters.stav === 'uzavrete' ? 'selected' : '' %>>Uzavreté</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Použiť filtre</button>
+          <a class="btn btn-ghost btn-block mt1" href="/tendre">Zrušiť filtre</a>
+        </form>
+        <% if (user) { %>
+          <form action="/straznici" method="post" style="margin-top:1.2rem;border-top:1px solid var(--line);padding-top:1.2rem">
+            <input type="hidden" name="q" value="<%= filters.q %>">
+            <input type="hidden" name="odvetvie" value="<%= filters.odvetvie %>">
+            <input type="hidden" name="kraj" value="<%= filters.kraj %>">
+            <input type="hidden" name="cpv" value="<%= filters.cpv %>">
+            <input type="hidden" name="min_hodnota" value="<%= filters.min_hodnota %>">
+            <div class="field">
+              <label for="s-name">Uložiť toto hľadanie ako strážcu</label>
+              <input id="s-name" type="text" name="name" placeholder="Názov strážcu" required>
+            </div>
+            <button class="btn btn-accent btn-block btn-sm" type="submit">Uložiť a sledovať</button>
+          </form>
+        <% } else { %>
+          <div style="margin-top:1.2rem;border-top:1px solid var(--line);padding-top:1.2rem">
+            <p class="small" style="margin-bottom:.6rem"><strong>Nový tender vo vašom odvetví?</strong> Radar vám pošle e-mail.</p>
+            <a class="btn btn-accent btn-block btn-sm" href="/grantovy-radar">Zapnúť radar zadarmo</a>
+          </div>
+        <% } %>
+      </div>
+    </aside>
+
+    <div>
+      <div class="panel-head">
+        <div>
+          <h1 style="font-size:1.7rem;margin-bottom:.2rem">Verejné zákazky</h1>
+          <p class="muted mb0">Nájdených <strong><%= total.toLocaleString('sk-SK') %></strong> zákaziek — zdroj: európsky vestník TED</p>
+        </div>
+        <form method="get" style="display:flex;align-items:center;gap:.5rem">
+          <% for (const [k, v] of Object.entries(filters)) { if (k !== 'sort' && v) { %><input type="hidden" name="<%= k %>" value="<%= v %>"><% } } %>
+          <label class="small" for="sort" style="margin:0;font-weight:700">Zoradiť:</label>
+          <select id="sort" name="sort" data-autosubmit style="width:auto">
+            <option value="najnovsie" <%= filters.sort === 'najnovsie' ? 'selected' : '' %>>Najnovšie</option>
+            <option value="uzavierka" <%= filters.sort === 'uzavierka' ? 'selected' : '' %>>Podľa lehoty</option>
+            <option value="hodnota" <%= filters.sort === 'hodnota' ? 'selected' : '' %>>Najvyššia hodnota</option>
+          </select>
+        </form>
+      </div>
+
+      <% if (!tendre.length) { %>
+        <div class="empty">
+          <h3>Žiadna zákazka nezodpovedá filtrom</h3>
+          <p>Skúste zvoľniť kritériá alebo si <a href="/grantovy-radar">zapnite radar</a>.</p>
+        </div>
+      <% } %>
+
+      <% tendre.forEach((t, ti) => { %>
+        <%- include('partials/tender-card', { t }) %>
+        <% if (ti === 2) { %>
+          <%- include('partials/register-cta', { ctaTitle: 'Nové tendre z vášho odvetvia rovno do e-mailu', ctaText: 'Zaregistrujte sa zdarma, vyberte si odvetvia a žiadna zákazka vám neujde.' }) %>
+        <% } %>
+      <% }) %>
+
+      <% if (pages > 1) { %>
+        <nav class="pager" aria-label="Stránkovanie">
+          <% const mkUrl = (p) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(filters)) if (v) u.set(k, v); u.set('strana', p); return '/tendre?' + u.toString(); }; %>
+          <% if (page > 1) { %><a href="<%= mkUrl(page - 1) %>">‹ Predchádzajúca</a><% } %>
+          <span class="cur">Strana <%= page %> / <%= pages %></span>
+          <% if (page < pages) { %><a href="<%= mkUrl(page + 1) %>">Ďalšia ›</a><% } %>
+        </nav>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

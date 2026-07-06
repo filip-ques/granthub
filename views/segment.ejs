@@ -1,0 +1,47 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span><%= seg.title %></nav>
+
+  <div class="section-head">
+    <h1><%= seg.title %></h1>
+    <p><%= seg.lead %></p>
+  </div>
+
+  <div class="layout-detail">
+    <div>
+      <div class="panel-head">
+        <h2 class="mb0">Aktuálne otvorené výzvy</h2>
+        <a class="btn btn-ghost btn-sm" href="/vyzvy?ziadatel=<%= encodeURIComponent(seg.applicantKey) %>">Všetky pre tento segment</a>
+      </div>
+      <% if (!vyzvy.length) { %>
+        <div class="empty">
+          <h3>Momentálne žiadna otvorená výzva</h3>
+          <p><a href="/grantovy-radar">Zapnite si grantový radar</a> — dáme vám vedieť hneď, keď pribudne.</p>
+        </div>
+      <% } %>
+      <% for (const v of vyzvy) { %>
+        <%- include('partials/vyzva-card', { v }) %>
+      <% } %>
+    </div>
+
+    <aside>
+      <div class="callout" style="margin-bottom:1.2rem">
+        <h3>Na čo sa dá získať podpora</h3>
+        <ul style="padding-left:1.2rem;margin:0">
+          <% for (const p of seg.points) { %><li><%= p %></li><% } %>
+        </ul>
+      </div>
+      <div class="searchcard">
+        <span class="ribbon">Zľava −50 %</span>
+        <h3>Nemáte čas na papierovanie?</h3>
+        <p class="small">Overíme, či na vybranú výzvu sedíte (od 499 €), alebo za vás pripravíme celý projekt (od 999 €).</p>
+        <a class="btn btn-primary btn-block" href="/sluzby/napasovanie-na-vyzvu" style="margin-bottom:.5rem">Napasovanie na výzvu</a>
+        <a class="btn btn-ghost btn-block" href="/sluzby/vypracovanie-projektu">Vypracovanie projektu</a>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

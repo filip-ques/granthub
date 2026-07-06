@@ -1,0 +1,82 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span>Výzvy</nav>
+  <div class="layout">
+    <aside class="filters">
+      <button type="button" class="btn btn-ghost filters-toggle" aria-controls="filtersBody" aria-expanded="false">
+        <span>Filtre výziev</span><span class="fx" aria-hidden="true">▾</span>
+      </button>
+      <div class="filters-body" id="filtersBody">
+        <form action="/vyzvy" method="get">
+          <h2>Filtre</h2>
+          <div class="field">
+            <label for="f-q">Kľúčové slovo</label>
+            <input id="f-q" type="text" name="q" value="<%= filters.q %>" placeholder="hľadať v názve a popise">
+          </div>
+          <div class="field">
+            <label for="f-kat">Oblasť</label>
+            <select id="f-kat" name="kategoria" data-autosubmit>
+              <option value="">Všetky oblasti</option>
+              <% for (const c of CATEGORIES) { %><option value="<%= c %>" <%= filters.kategoria === c ? 'selected' : '' %>><%= c %></option><% } %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-zia">Typ organizácie</label>
+            <select id="f-zia" name="ziadatel" data-autosubmit>
+              <option value="">Všetky typy</option>
+              <% for (const a of APPLICANTS) { %><option value="<%= a %>" <%= filters.ziadatel === a ? 'selected' : '' %>><%= a %></option><% } %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-kraj">Kraj</label>
+            <select id="f-kraj" name="kraj" data-autosubmit>
+              <option value="">Celé Slovensko</option>
+              <% for (const r of REGIONS) { %><option value="<%= r %>" <%= filters.kraj === r ? 'selected' : '' %>><%= r %></option><% } %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-stav">Stav</label>
+            <select id="f-stav" name="stav" data-autosubmit>
+              <option value="otvorena" <%= filters.stav === 'otvorena' ? 'selected' : '' %>>Len otvorené</option>
+              <option value="vsetky" <%= filters.stav === 'vsetky' ? 'selected' : '' %>>Všetky</option>
+              <option value="uzavreta" <%= filters.stav === 'uzavreta' ? 'selected' : '' %>>Uzavreté</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Použiť filtre</button>
+          <a class="btn btn-ghost btn-block mt1" href="/vyzvy">Zrušiť filtre</a>
+        </form>
+        <div style="margin-top:1.2rem;border-top:1px solid var(--line);padding-top:1.2rem">
+          <p class="small" style="margin-bottom:.6rem"><strong>Nič nezmeškajte.</strong> Radar vám pošle e-mail o každej novej výzve z vybraných oblastí.</p>
+          <a class="btn btn-accent btn-block btn-sm" href="/grantovy-radar">Zapnúť radar zadarmo</a>
+        </div>
+      </div>
+    </aside>
+
+    <div>
+      <div class="panel-head">
+        <div>
+          <h1 style="font-size:1.7rem;margin-bottom:.2rem">Grantové výzvy</h1>
+          <p class="muted mb0">Nájdených <strong><%= vyzvy.length %></strong> výziev — všetky údaje zadarmo</p>
+        </div>
+      </div>
+
+      <% if (!vyzvy.length) { %>
+        <div class="empty">
+          <h3>Žiadna výzva nezodpovedá filtrom</h3>
+          <p>Skúste zvoľniť kritériá alebo si <a href="/grantovy-radar">zapnite grantový radar</a> — dáme vám vedieť, keď vhodná výzva pribudne.</p>
+        </div>
+      <% } %>
+
+      <% vyzvy.forEach((v, vi) => { %>
+        <%- include('partials/vyzva-card', { v }) %>
+        <% if (vi === 2) { %>
+          <%- include('partials/register-cta', { ctaTitle: 'Nové výzvy rovno do e-mailu', ctaText: 'Zaregistrujte sa zdarma a vyberte si oblasti — o žiadnom grante už neprídete.' }) %>
+        <% } %>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

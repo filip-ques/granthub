@@ -1,0 +1,75 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span>Služby</nav>
+  <div class="section-head">
+    <h1>Naše služby</h1>
+    <p>Databáza výziev, detail každej výzvy aj grantový radar sú <strong>úplne zadarmo</strong>. Platíte len vtedy, keď chcete našu prácu navyše — a teraz obe služby so zľavou 50&nbsp;%.</p>
+  </div>
+
+  <h2 style="margin-top:1.5rem">Granty</h2>
+  <div class="layout-split">
+    <% for (const s of SERVICES.filter(x => x.kind === 'grant')) { %>
+      <div class="price-card" style="max-width:none;margin:0">
+        <div style="padding:1.6rem">
+          <span class="ribbon">Zľava −50 %</span>
+          <h2 style="font-size:1.3rem"><%= s.name %></h2>
+          <p class="small"><%= s.lead %></p>
+          <p class="amount" style="font-size:2.2rem">od <%= s.price.toLocaleString('sk-SK') %> € <small><span style="text-decoration:line-through"><%= s.origPrice.toLocaleString('sk-SK') %> €</span> · bez DPH</small></p>
+          <ul class="price-list">
+            <% for (const i of s.includes) { %><li><%= i %></li><% } %>
+          </ul>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+            <a class="btn btn-primary" href="/objednavka?sluzba=<%= s.slug %>">Nezáväzne objednať</a>
+            <a class="btn btn-ghost" href="/sluzby/<%= s.slug %>">Detail služby</a>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <h2 style="margin-top:2rem">Tendre</h2>
+  <div class="layout-split">
+    <% for (const s of SERVICES.filter(x => x.kind === 'tender')) { %>
+      <div class="price-card" style="max-width:none;margin:0">
+        <div style="padding:1.6rem">
+          <span class="ribbon">Zľava −50 %</span>
+          <h2 style="font-size:1.3rem"><%= s.name %></h2>
+          <p class="small"><%= s.lead %></p>
+          <p class="amount" style="font-size:2.2rem">od <%= s.price.toLocaleString('sk-SK') %> € <small><span style="text-decoration:line-through"><%= s.origPrice.toLocaleString('sk-SK') %> €</span> · bez DPH</small></p>
+          <ul class="price-list">
+            <% for (const i of s.includes) { %><li><%= i %></li><% } %>
+          </ul>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+            <a class="btn btn-primary" href="/objednavka?sluzba=<%= s.slug %>">Nezáväzne objednať</a>
+            <a class="btn btn-ghost" href="/sluzby/<%= s.slug %>">Detail služby</a>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <span class="eyebrow">Bez poplatkov</span>
+      <h2>Čo je zadarmo</h2>
+    </div>
+    <div class="grid grid-3">
+      <div class="card feature">
+        <h3><a href="/vyzvy">Katalóg výziev</a></h3>
+        <p class="small mb0">Kompletné údaje o každej výzve — vyhlasovateľ, sumy, termíny, oprávnení žiadatelia. Bez registrácie a bez paywallu.</p>
+      </div>
+      <div class="card feature">
+        <h3><a href="/grantovy-radar">Grantový radar</a></h3>
+        <p class="small mb0">E-mailové upozornenia na nové výzvy z oblastí, ktoré si vyberiete.</p>
+      </div>
+      <div class="card feature">
+        <h3><a href="/prihlasenie">Účet s uloženými výzvami</a></h3>
+        <p class="small mb0">Prihlásenie jedným klikom cez e-mail (magic link), ukladanie výziev a prehľad objednávok.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<%- include('partials/footer') %>

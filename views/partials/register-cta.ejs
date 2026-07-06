@@ -1,0 +1,9 @@
+<% if (!user) { %>
+<div class="callout" style="margin:1.2rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+  <div>
+    <strong><%= typeof ctaTitle !== 'undefined' ? ctaTitle : 'Nechajte relevantné ponuky chodiť za vami' %></strong>
+    <p class="small mb0 muted"><%= typeof ctaText !== 'undefined' ? ctaText : 'Zaregistrujte sa zdarma, vyberte si oblasti a nové granty aj tendre vám pošleme e-mailom.' %></p>
+  </div>
+  <a class="btn btn-primary" href="/registracia" style="white-space:nowrap">Registrácia zdarma</a>
+</div>
+<% } %>

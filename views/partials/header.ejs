@@ -1,0 +1,46 @@
+<%
+const NAV = [
+  { href: '/vyzvy', label: 'Granty' },
+  { href: '/tendre', label: 'Tendre' },
+  { href: '/cennik', label: 'Cenník' },
+  { href: '/grantovy-radar', label: 'Radar' },
+  { href: '/ako-fungujeme', label: 'Ako fungujeme' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/kontakt', label: 'Kontakt' },
+];
+%>
+<header class="nav">
+  <div class="container nav-inner">
+    <a href="/" class="brand">
+      <img class="logo" src="/img/logo.svg" alt="">
+      <span>Grant<b>Hub</b></span>
+    </a>
+    <button class="nav-toggle" aria-label="Otvoriť menu" aria-expanded="false">Menu</button>
+    <nav class="nav-links" aria-label="Hlavná navigácia">
+      <% for (const item of NAV) { const active = path === item.href || (item.href !== '/' && path.startsWith(item.href)); %>
+        <a href="<%= item.href %>" class="<%= active ? 'active' : '' %>"><%= item.label %></a>
+      <% } %>
+    </nav>
+    <div class="nav-cta">
+      <% if (user) { %>
+        <% if (isAdmin) { %><a href="/admin" class="btn btn-accent btn-sm">Admin</a><% } %>
+        <a href="/ucet" class="btn btn-ghost btn-sm">Môj účet</a>
+        <form method="post" action="/odhlasenie" style="display:contents">
+          <button type="submit" class="btn btn-primary btn-sm">Odhlásiť</button>
+        </form>
+      <% } else { %>
+        <a href="/prihlasenie" class="btn btn-ghost btn-sm">Prihlásiť</a>
+        <a href="/registracia" class="btn btn-primary btn-sm">Registrácia zdarma</a>
+      <% } %>
+    </div>
+  </div>
+</header>
+
+<div class="phase-banner">
+  <div class="container">
+    <span class="phase-tag">Beta</span>
+    <span>Toto je nová služba — vaša <a href="/kontakt">spätná väzba</a> nám pomôže ju vylepšiť.</span>
+  </div>
+</div>
+
+<main id="main">

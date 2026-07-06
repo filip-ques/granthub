@@ -1,0 +1,55 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('partials/menu', { active: 'dashboard' }) %>
+
+  <div>
+    <h1 style="font-size:1.7rem">Prehľad</h1>
+    <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi"><div class="num"><%= kpi.otvorene %></div><div class="lbl">otvorených výziev</div></div>
+      <div class="kpi"><div class="num"><%= kpi.tendre_otvorene.toLocaleString("sk-SK") %></div><div class="lbl">otvorených tendrov</div></div>
+      <div class="kpi"><div class="num"><%= kpi.itms %></div><div class="lbl">z ITMS (auto)</div></div>
+      <div class="kpi"><div class="num"><%= kpi.manualne %></div><div class="lbl">manuálnych</div></div>
+      <div class="kpi"><div class="num"><%= kpi.pouzivatelia %></div><div class="lbl">používateľov</div></div>
+      <div class="kpi"><div class="num"><%= kpi.odbery %></div><div class="lbl">radar odberov</div></div>
+      <div class="kpi"><div class="num"><%= kpi.nove_objednavky %></div><div class="lbl">nových objednávok</div></div>
+    </div>
+
+    <div class="panel mt3">
+      <div class="panel-head"><h2>Joby</h2></div>
+      <% if (!jobs.length) { %><p class="muted mb0">Zatiaľ nebežal žiadny job.</p><% } %>
+      <table class="t">
+        <tbody>
+          <% for (const j of jobs) { %>
+            <tr>
+              <th scope="row"><%= j.key === 'ingest_last_run' ? 'Ingest (ITMS)' : j.key === 'radar_last_run' ? 'Radar digest' : j.key %></th>
+              <td><%= new Date(j.value).toLocaleString('sk-SK') %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+      <p class="small muted mb0 mt1">Joby beží automaticky každých 6 hodín (Cron Triggers / interný cron). Manuálne: <span class="mono">POST /cron/ingest</span>, <span class="mono">POST /cron/radar</span> s hlavičkou <span class="mono">Authorization: Bearer CRON_SECRET</span>.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Posledné objednávky</h2><a class="btn btn-ghost btn-sm" href="/admin/objednavky">Všetky</a></div>
+      <% if (!lastOrders.length) { %><p class="muted mb0">Žiadne objednávky.</p><% } else { %>
+        <table class="t">
+          <tbody>
+            <% for (const o of lastOrders) { %>
+              <tr>
+                <td><%= fmtDate(o.created_at) %></td>
+                <td><%= o.service %></td>
+                <td><%= o.name %> · <%= o.email %></td>
+                <td><span class="badge-stage s-watch"><%= o.status %></span></td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

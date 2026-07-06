@@ -1,0 +1,42 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('partials/menu', { active: 'objednavky' }) %>
+
+  <div>
+    <h1 style="font-size:1.7rem">Objednávky</h1>
+    <% if (!orders.length) { %>
+      <div class="empty"><h3>Žiadne objednávky</h3></div>
+    <% } else { %>
+      <% for (const o of orders) { const svc = SERVICES.find(s => s.slug === o.service); %>
+        <div class="panel">
+          <div class="panel-head">
+            <h3 style="margin:0"><%= svc ? svc.name : o.service %></h3>
+            <span class="small muted"><%= new Date(o.created_at).toLocaleString('sk-SK') %></span>
+          </div>
+          <div class="tender-meta" style="margin-bottom:.6rem">
+            <span class="meta-item"><strong><%= o.name %></strong> · <a href="mailto:<%= o.email %>"><%= o.email %></a><% if (o.phone) { %> · <%= o.phone %><% } %></span>
+          </div>
+          <% if (o.company || o.ico) { %><p class="small mb0">Firma: <%= o.company || '—' %><% if (o.ico) { %> (IČO <%= o.ico %>)<% } %></p><% } %>
+          <% if (o.vyzva_title) { %><p class="small mb0">Výzva: <a href="/vyzvy/<%= o.vyzva_slug %>" target="_blank"><%= o.vyzva_title %></a></p><% } %>
+          <% if (o.message) { %><p class="small" style="margin:.5rem 0 0;white-space:pre-wrap"><%= o.message %></p><% } %>
+          <div class="tender-foot">
+            <span class="badge-stage <%= o.status === 'nova' ? 's-watch' : o.status === 'v-rieseni' ? 's-preparing' : o.status === 'vybavena' ? 's-won' : 's-lost' %>"><%= o.status %></span>
+            <form method="post" action="/admin/objednavky/<%= o.id %>" style="display:flex;gap:.5rem;align-items:center">
+              <select name="status" style="width:auto;min-height:38px">
+                <option value="nova" <%= o.status === 'nova' ? 'selected' : '' %>>nová</option>
+                <option value="v-rieseni" <%= o.status === 'v-rieseni' ? 'selected' : '' %>>v riešení</option>
+                <option value="vybavena" <%= o.status === 'vybavena' ? 'selected' : '' %>>vybavená</option>
+                <option value="zrusena" <%= o.status === 'zrusena' ? 'selected' : '' %>>zrušená</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" type="submit">Zmeniť stav</button>
+            </form>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,30 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span>CPV kódy</nav>
+  <div class="section-head">
+    <h1>CPV kódy</h1>
+    <p>Common Procurement Vocabulary — jednotná klasifikácia predmetu verejných zákaziek v celej EÚ. Kliknutím na divíziu zobrazíte aktuálne otvorené tendre.</p>
+  </div>
+
+  <table class="t t--cards">
+    <thead>
+      <tr><th>Kód</th><th>Popis divízie</th><th>Otvorené tendre</th><th data-label=""></th></tr>
+    </thead>
+    <tbody>
+      <% for (const [code, label] of catalog) { const div = code.slice(0, 2); const cnt = countMap[div] || 0; %>
+        <tr>
+          <td data-label="Kód" class="mono"><%= code %></td>
+          <td data-label="Popis"><%= label %></td>
+          <td data-label="Otvorené tendre"><%= cnt %></td>
+          <td data-label="">
+            <a class="btn btn-ghost btn-sm" href="/tendre?cpv=<%= div %>">Zobraziť tendre</a>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('partials/footer') %>

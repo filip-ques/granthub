@@ -1,0 +1,54 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia">
+    <a href="/">Domov</a><span class="sep">›</span><a href="/sluzby">Služby</a><span class="sep">›</span><%= service.shortName %>
+  </nav>
+
+  <div class="layout-detail">
+    <div class="prose">
+      <h1><%= service.name %></h1>
+      <p class="lead" style="font-size:1.1rem"><%= service.lead %></p>
+
+      <h2>Čo služba obsahuje</h2>
+      <ul class="price-list" style="max-width:640px">
+        <% for (const i of service.includes) { %><li><%= i %></li><% } %>
+      </ul>
+
+      <h2>Ako to prebieha</h2>
+      <div class="grid grid-3" style="margin-top:1rem">
+        <div class="card feature">
+          <span class="step">1</span>
+          <p class="small mb0">Odošlete nezáväznú objednávku — stačí e-mail a pár viet o vašom zámere.</p>
+        </div>
+        <div class="card feature">
+          <span class="step">2</span>
+          <p class="small mb0">Ozveme sa, upresníme rozsah a konečnú cenu potvrdíme vopred.</p>
+        </div>
+        <div class="card feature">
+          <span class="step">3</span>
+          <p class="small mb0">Pracujeme. Nič neplatíte, kým sa nedohodneme.</p>
+        </div>
+      </div>
+
+      <div class="inset-text">
+        Ak si myslíme, že na výzvu nesedíte, povieme vám to rovno — skôr, než čokoľvek zaplatíte.
+      </div>
+    </div>
+
+    <aside>
+      <div class="searchcard">
+        <span class="ribbon">Zľava −50 %</span>
+        <p class="amount" style="font-size:2.2rem;font-weight:700;color:var(--ink);margin:.4rem 0">
+          od <%= service.price.toLocaleString('sk-SK') %> €
+        </p>
+        <p class="small muted" style="margin-top:0"><span style="text-decoration:line-through"><%= service.origPrice.toLocaleString('sk-SK') %> €</span> · bez DPH</p>
+        <p class="small">Konečná cena závisí od rozsahu výzvy a projektu — potvrdíme ju vopred, pred začatím prác.</p>
+        <a class="btn btn-primary btn-block" href="/objednavka?sluzba=<%= service.slug %>">Nezáväzne objednať</a>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

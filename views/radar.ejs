@@ -1,0 +1,73 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span>Grantový radar</nav>
+
+  <div class="layout-split">
+    <div>
+      <h1>Radar — granty aj tendre</h1>
+      <p class="lead">Nechajte si strážiť nové grantové výzvy aj verejné zákazky. Keď pribudne niečo z oblastí, ktoré si vyberiete, pošleme vám e-mail. Služba je <strong>zadarmo</strong> a odhlásiť sa dá kedykoľvek.</p>
+
+      <% if (ok) { %>
+        <div class="alert alert-success" role="alert">
+          <strong>Radar je zapnutý</strong> pre <%= values.email %>. Nastavenia zmeníte kedykoľvek opätovným odoslaním formulára s tým istým e-mailom.
+        </div>
+      <% } %>
+
+      <% if (sent) { %>
+        <div class="alert alert-info" role="alert">
+          <strong>Skontrolujte si schránku <%= values.email %>.</strong>
+          Poslali sme vám potvrdzovací odkaz — kliknutím potvrdíte odber a zároveň sa prihlásite do svojho účtu (odber = registrácia, nič ďalšie netreba).
+        </div>
+        <% if (devLink) { %>
+          <div class="notification-banner">
+            <div class="nb-head">Núdzový režim (SMTP nie je nastavené)</div>
+            <div class="nb-body"><p><a href="<%= devLink %>">Potvrdiť odber teraz</a></p></div>
+          </div>
+        <% } %>
+      <% } %>
+
+      <% if (error) { %>
+        <div class="error-summary" role="alert">
+          <h2>Formulár sa nepodarilo odoslať</h2>
+          <ul><li><%= error %></li></ul>
+        </div>
+      <% } %>
+
+      <form method="post" action="/grantovy-radar" class="panel" novalidate>
+        <div class="field">
+          <label for="r-email">Váš e-mail *</label>
+          <input id="r-email" name="email" type="email" autocomplete="email" required value="<%= values.email || (user ? user.email : '') %>">
+        </div>
+        <fieldset style="border:0;padding:0;margin:0 0 1rem">
+          <legend style="font-weight:700;font-size:.875rem;margin-bottom:.3rem">Oblasti grantov a dotácií</legend>
+          <div class="hint small muted" style="margin-bottom:.6rem">Ak nevyberiete žiadnu, budeme vás informovať o všetkých nových výzvach.</div>
+          <div class="checkbox-grid">
+            <% CATEGORIES.forEach((c, i) => { const checked = (values.kategorie || []).includes(c); %>
+              <label style="display:flex;gap:.5rem;align-items:flex-start;font-weight:400">
+                <input type="checkbox" name="kategorie" value="<%= c %>" <%= checked ? 'checked' : '' %> style="width:auto;margin-top:.2rem">
+                <span class="small"><%= c %></span>
+              </label>
+            <% }) %>
+          </div>
+        </fieldset>
+        <button type="submit" class="btn btn-primary">Zapnúť radar zadarmo</button>
+      </form>
+    </div>
+
+    <aside>
+      <div class="callout">
+        <h3>Ako radar funguje</h3>
+        <ul style="padding-left:1.2rem;margin:0">
+          <li>Sledujeme oficiálne zdroje vyhlasovateľov.</li>
+          <li>Nové výzvy zaraďujeme do databázy priebežne.</li>
+          <li>E-mail dostanete, len keď pribudne výzva z vašich oblastí.</li>
+          <li>Žiadny spam — radar kedykoľvek vypnete.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,142 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="pill">Granty + tendre zadarmo</span>
+      <h1 style="margin-top:.8rem">Granty, dotácie a verejné zákazky na jednom mieste</h1>
+      <p class="lead">Všetky aktuálne grantové výzvy aj tendre — vrátane vyhlasovateľa, súm a termínov. Bez predplatného a bez skrytých údajov.</p>
+      <div class="hero-actions">
+        <a href="/registracia" class="btn btn-accent">Registrácia zdarma — ponuky e-mailom</a>
+        <a href="/vyzvy" class="btn btn-primary">Grantové výzvy</a>
+        <a href="/tendre" class="btn btn-ghost">Verejné zákazky</a>
+      </div>
+      <div class="hero-trust">
+        <span><b><%= openCount %></b> otvorených výziev</span>
+        <span><b><%= tenderCount.toLocaleString('sk-SK') %></b> otvorených tendrov</span>
+        <span><b>0 €</b> za prístup k databáze</span>
+      </div>
+    </div>
+    <div class="searchcard">
+      <h2>Rýchle hľadanie výzvy</h2>
+      <form action="/vyzvy" method="get">
+        <div class="field">
+          <label for="h-q">Kľúčové slovo</label>
+          <input id="h-q" type="text" name="q" placeholder="napr. fotovoltika, digitalizácia…">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="h-kat">Oblasť</label>
+            <select id="h-kat" name="kategoria">
+              <option value="">Všetky oblasti</option>
+              <% for (const c of CATEGORIES) { %><option value="<%= c %>"><%= c %></option><% } %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="h-zia">Typ organizácie</label>
+            <select id="h-zia" name="ziadatel">
+              <option value="">Všetky typy</option>
+              <% for (const a of APPLICANTS) { %><option value="<%= a %>"><%= a %></option><% } %>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Hľadať výzvy</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="container">
+    <div class="panel-head">
+      <h2 class="mb0">Granty — najbližšie uzávierky</h2>
+      <a class="btn btn-ghost btn-sm" href="/vyzvy">Všetky výzvy</a>
+    </div>
+    <% for (const v of vyzvy) { %>
+      <%- include('partials/vyzva-card', { v }) %>
+    <% } %>
+  </div>
+</section>
+
+<section style="background:var(--bg-grey);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="container">
+    <div class="panel-head">
+      <h2 class="mb0">Tendre — najnovšie zákazky</h2>
+      <a class="btn btn-ghost btn-sm" href="/tendre">Všetky tendre</a>
+    </div>
+    <% for (const t of tendre) { %>
+      <%- include('partials/tender-card', { t }) %>
+    <% } %>
+  </div>
+</section>
+
+<div class="ctaband">
+  <div class="container ctaband-inner">
+    <div>
+      <h2>Keď chcete grant naozaj získať</h2>
+      <p style="color:#cdd8e8;margin:0">Databáza aj radar sú zadarmo. Ak to myslíte vážne, pomôžeme vám priamo — napasujeme vašu firmu na výzvu alebo napíšeme celý projekt. Obe služby teraz so zľavou 50&nbsp;%.</p>
+    </div>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+      <a href="/sluzby/napasovanie-na-vyzvu" class="btn btn-white">Napasovanie od 499 €</a>
+      <a href="/sluzby/vypracovanie-projektu" class="btn btn-accent">Projekt od 999 €</a>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="container">
+    <div class="section-head center">
+      <span class="eyebrow">Postup</span>
+      <h2>Ako to funguje</h2>
+    </div>
+    <div class="grid grid-3">
+      <div class="card feature">
+        <span class="step">1</span>
+        <h3>Nájdite výzvu</h3>
+        <p class="small mb0">Filtrovanie podľa oblasti, typu organizácie a kraja. Všetky údaje o výzvach sú verejné a bezplatné.</p>
+      </div>
+      <div class="card feature">
+        <span class="step">2</span>
+        <h3>Nechajte si strážiť novinky</h3>
+        <p class="small mb0">Grantový radar vám pošle e-mail, keď pribudne výzva z oblastí, ktoré vás zaujímajú. Zadarmo.</p>
+      </div>
+      <div class="card feature">
+        <span class="step">3</span>
+        <h3>Získajte grant</h3>
+        <p class="small mb0">Overíme, či na výzvu sedíte (od 499 €), alebo za vás pripravíme celý projekt od zámeru po podanie (od 999 €).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg-grey);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="container">
+    <div class="section-head center">
+      <span class="eyebrow">Segmenty</span>
+      <h2>Pre koho sú granty</h2>
+    </div>
+    <div class="grid grid-3">
+      <a class="cat" href="/pre-podnikatelov"><span class="t">Podnikatelia</span><span class="c">inovácie, energetika, expanzia</span></a>
+      <a class="cat" href="/pre-mesta-a-obce"><span class="t">Mestá a obce</span><span class="c">zeleň, sociálne služby, odpady</span></a>
+      <a class="cat" href="/pre-skoly"><span class="t">Školy</span><span class="c">vzdelávanie, veda a výskum</span></a>
+      <a class="cat" href="/pre-mimovladne-organizacie"><span class="t">Mimovládne organizácie</span><span class="c">komunitné projekty, rozvoj</span></a>
+      <a class="cat" href="/pre-jednotlivcov"><span class="t">Jednotlivci</span><span class="c">mladí farmári, tvorcovia</span></a>
+      <a class="cat" href="/vyzvy"><span class="t">Všetky výzvy</span><span class="c">kompletný katalóg</span></a>
+    </div>
+  </div>
+</section>
+
+<div class="ctaband">
+  <div class="container ctaband-inner">
+    <div>
+      <h2>Nezmeškajte žiadnu výzvu ani tender</h2>
+      <p style="color:#cdd8e8;margin:0">Zapnite si radar — pošleme vám e-mail vždy, keď pribudne grantová výzva alebo zákazka z oblastí, ktoré vás zaujímajú.</p>
+    </div>
+    <form class="cta-emailform" action="/grantovy-radar" method="get">
+      <a href="/grantovy-radar" class="btn btn-accent btn-block">Zapnúť radar zadarmo</a>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

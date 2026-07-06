@@ -1,0 +1,140 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia">
+    <a href="/">Domov</a><span class="sep">›</span><a href="/vyzvy">Výzvy</a><span class="sep">›</span><%= vyzva.title %>
+  </nav>
+
+  <div class="layout-detail">
+    <div class="vyzva-detail">
+      <%
+        const dl = daysLeft(vyzva.deadline);
+        const dlCls = dl == null ? 'muted' : dl < 0 ? 'closed' : dl <= 7 ? 'urgent' : dl <= 30 ? 'soon' : 'ok';
+      %>
+      <div class="tender-meta" style="margin-bottom:.6rem">
+        <span class="tag brand"><%= vyzva.category %></span>
+        <% if (dl != null && dl >= 0) { %><span class="tag accent"><%= dl === 0 ? 'posledný deň na podanie' : fmtDays(dl) %></span>
+        <% } else if (dl != null) { %><span class="tag">uzavretá</span>
+        <% } else if (vyzva.deadline_note) { %><span class="tag"><%= vyzva.deadline_note %></span><% } %>
+      </div>
+      <h1><%= vyzva.title %></h1>
+      <p class="lead" style="font-size:1.1rem"><%= vyzva.summary %></p>
+
+      <% if (vyzva.details) { %>
+        <h2>O výzve</h2>
+        <p><%= vyzva.details %></p>
+      <% } %>
+
+      <% if (vyzva.objectives) { %>
+        <h2>Konkrétne ciele výzvy</h2>
+        <ul>
+          <% for (const c of vyzva.objectives.split('\n')) { %><li><%= c %></li><% } %>
+        </ul>
+      <% } %>
+
+      <h2>Parametre výzvy</h2>
+      <table class="t">
+        <tbody>
+          <tr><th scope="row">Vyhlasovateľ</th><td><%= vyzva.provider || 'uvedený v dokumentácii výzvy' %></td></tr>
+          <% if (vyzva.code) { %><tr><th scope="row">Kód výzvy</th><td class="mono"><%= vyzva.code %></td></tr><% } %>
+          <% if (vyzva.announced) { %><tr><th scope="row">Dátum vyhlásenia</th><td><%= fmtDate(vyzva.announced) %></td></tr><% } %>
+          <% if (vyzva.program) { %><tr><th scope="row">Program / poznámka</th><td><%= vyzva.program %></td></tr><% } %>
+          <tr><th scope="row">Výška podpory</th><td>
+            <% if (vyzva.amount_min && vyzva.amount_max) { %><%= fmtEur(vyzva.amount_min) %> – <%= fmtEur(vyzva.amount_max) %>
+            <% } else if (vyzva.amount_max) { %>do <%= fmtEur(vyzva.amount_max) %>
+            <% } else { %>nie je určená<% } %>
+          </td></tr>
+          <% if (vyzva.allocation) { %><tr><th scope="row">Celková alokácia</th><td><%= fmtEur(vyzva.allocation) %></td></tr><% } %>
+          <tr><th scope="row">Uzávierka</th><td class="dl <%= dlCls %>"><%= vyzva.deadline ? fmtDate(vyzva.deadline) : (vyzva.deadline_note || 'neurčená') %></td></tr>
+          <tr><th scope="row">Oprávnení žiadatelia</th><td><%= vyzva.applicants %></td></tr>
+          <tr><th scope="row">Oprávnené územie</th><td><%= vyzva.regions %></td></tr>
+          <% if (vyzva.fund) { %><tr><th scope="row">Fond</th><td><%= vyzva.fund %></td></tr><% } %>
+        </tbody>
+      </table>
+
+      <% const links = vyzva.links || []; %>
+      <% const apiLink = vyzva.source === 'itms' ? `https://opendata.itms2014.sk/v2/vyzvy/vyhlasene/${vyzva.slug.replace('itms-','')}` : null; %>
+      <h2>Oficiálna stránka a dokumenty</h2>
+      <ul>
+        <% for (const l of links) { %>
+          <li><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.nazov %></a> <span class="small muted">(stránka vyhlasovateľa)</span></li>
+        <% } %>
+        <% if (!links.length && vyzva.source_url && vyzva.source !== 'itms') { %>
+          <li><a href="<%= vyzva.source_url %>" target="_blank" rel="noopener">Oficiálna stránka vyhlasovateľa / programu</a></li>
+        <% } %>
+        <% if (apiLink) { %>
+          <li><a href="<%= apiLink %>" target="_blank" rel="noopener">Záznam výzvy v ITMS open data</a> <span class="small muted">(strojový zdroj údajov, JSON)</span></li>
+        <% } %>
+        <% if (!links.length && !apiLink && !vyzva.source_url) { %>
+          <li><a href="https://www.google.com/search?q=<%= encodeURIComponent('\"' + vyzva.title + '\" výzva') %>" target="_blank" rel="noopener">Vyhľadať oficiálnu stránku výzvy</a> <span class="small muted">(vyhľadávanie podľa presného názvu)</span></li>
+        <% } %>
+      </ul>
+
+      <% const contacts = vyzva.contacts || []; %>
+      <% if (contacts.length) { %>
+        <h2>Kontaktné osoby vyhlasovateľa</h2>
+        <table class="t">
+          <tbody>
+            <% for (const k of contacts) { %>
+              <tr>
+                <th scope="row"><%= k.meno %></th>
+                <td><% if (k.email) { %><a href="mailto:<%= k.email %>"><%= k.email %></a><% } %><% if (k.telefon) { %> · <%= k.telefon %><% } %></td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      <% } %>
+
+      <% if (user) { %>
+        <form method="post" action="/vyzvy/<%= vyzva.id %>/ulozit" class="mt2">
+          <% if (saved) { %>
+            <input type="hidden" name="akcia" value="odobrat">
+            <button class="btn btn-ghost">Odobrať z uložených</button>
+          <% } else { %>
+            <button class="btn btn-ghost">Uložiť výzvu do účtu</button>
+          <% } %>
+        </form>
+      <% } else { %>
+        <p class="small mt2"><a href="/prihlasenie?next=/vyzvy/<%= vyzva.slug %>">Prihláste sa</a> a uložte si výzvu do svojho účtu — zadarmo, stačí e-mail.</p>
+      <% } %>
+    </div>
+
+    <aside>
+      <% if (!user) { %>
+        <div class="searchcard" style="margin-bottom:1.2rem;border-top-color:var(--yellow)">
+          <h2 style="margin-bottom:.4rem">Podobné výzvy e-mailom</h2>
+          <p class="small">Zaregistrujte sa zdarma a nové výzvy z tejto oblasti vám pošleme hneď, ako pribudnú.</p>
+          <a class="btn btn-accent btn-block" href="/registracia">Registrácia zdarma</a>
+        </div>
+      <% } %>
+      <div class="searchcard" style="margin-bottom:1.2rem">
+        <span class="ribbon">Zľava −50 %</span>
+        <h2 style="margin-bottom:.4rem">Sedí táto výzva na vašu firmu?</h2>
+        <p class="small">Overíme oprávnenosť aj šance podľa hodnotiacich kritérií a povieme vám to na rovinu.</p>
+        <p style="margin:.6rem 0 1rem"><span class="muted" style="text-decoration:line-through">998 €</span>
+          <strong style="font-size:1.4rem;color:var(--ink)"> od 499 €</strong> <span class="small muted">bez DPH</span></p>
+        <a class="btn btn-primary btn-block" href="/objednavka?sluzba=napasovanie-na-vyzvu&vyzva=<%= vyzva.slug %>">Overiť napasovanie</a>
+      </div>
+      <div class="searchcard">
+        <span class="ribbon">Zľava −50 %</span>
+        <h2 style="margin-bottom:.4rem">Napíšeme projekt za vás</h2>
+        <p class="small">Kompletná žiadosť — zámer, rozpočet, prílohy aj podanie.</p>
+        <p style="margin:.6rem 0 1rem"><span class="muted" style="text-decoration:line-through">1 998 €</span>
+          <strong style="font-size:1.4rem;color:var(--ink)"> od 999 €</strong> <span class="small muted">bez DPH</span></p>
+        <a class="btn btn-ghost btn-block" href="/objednavka?sluzba=vypracovanie-projektu&vyzva=<%= vyzva.slug %>">Vypracovať projekt</a>
+      </div>
+    </aside>
+  </div>
+
+  <% if (similar.length) { %>
+    <section class="vyzva-similar" style="padding-top:1rem">
+      <h2>Podobné výzvy</h2>
+      <% for (const v of similar) { %>
+        <%- include('partials/vyzva-card', { v }) %>
+      <% } %>
+    </section>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,111 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('zona/menu', { active: 'ucet' }) %>
+  <div>
+
+  <div class="panel-head">
+    <div>
+      <h1 style="font-size:1.9rem;margin-bottom:.2rem">Môj účet</h1>
+      <p class="muted mb0">Prihlásený e-mail: <strong><%= user.email %></strong></p>
+    </div>
+    <form method="post" action="/odhlasenie">
+      <button type="submit" class="btn btn-ghost btn-sm">Odhlásiť sa</button>
+    </form>
+  </div>
+
+  <% if (savedMsg) { %>
+    <div class="alert alert-success" role="alert"><strong>Uložené.</strong> Údaje profilu boli uložené.</div>
+  <% } %>
+
+  <div class="layout-split">
+    <div class="panel">
+      <h2 style="font-size:1.2rem">Profil</h2>
+      <form method="post" action="/ucet">
+        <div class="field">
+          <label for="u-name">Meno a priezvisko</label>
+          <input id="u-name" name="name" type="text" autocomplete="name" value="<%= user.name || '' %>">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="u-company">Firma / organizácia</label>
+            <input id="u-company" name="company" type="text" autocomplete="organization" value="<%= user.company || '' %>">
+          </div>
+          <div class="field">
+            <label for="u-ico">IČO</label>
+            <input id="u-ico" name="ico" type="text" inputmode="numeric" value="<%= user.ico || '' %>">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Uložiť profil</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2 style="font-size:1.2rem">Radar</h2>
+      <% if (radar) { %>
+        <p><span class="status open">zapnutý</span>
+          <br><span class="small muted">Granty: <%= radar.categories ? radar.categories.split('|').join(', ') : 'všetky oblasti' %></span>
+          <% if (radar.tender_industries) { %><br><span class="small muted">Tendre: <%= radar.tender_industries.split('|').map(k => industryLabel(k)).join(', ') %></span><% } %>
+        </p>
+        <a class="btn btn-ghost btn-sm" href="/grantovy-radar">Upraviť nastavenia</a>
+      <% } else { %>
+        <p class="small">Radar zatiaľ nemáte zapnutý. Pošleme vám e-mail vždy, keď pribudne grantová výzva alebo tender z oblastí, ktoré vás zaujímajú.</p>
+        <a class="btn btn-primary btn-sm" href="/grantovy-radar">Zapnúť radar zadarmo</a>
+      <% } %>
+    </div>
+  </div>
+
+  <section style="padding-top:1.5rem">
+    <h2>Uložené výzvy</h2>
+    <% if (!saved.length) { %>
+      <div class="empty">
+        <h3>Zatiaľ žiadne uložené výzvy</h3>
+        <p><a href="/vyzvy">Prezrite si katalóg</a> a uložte si tie, ktoré vás zaujímajú.</p>
+      </div>
+    <% } else { %>
+      <% for (const v of saved) { %>
+        <%- include('partials/vyzva-card', { v }) %>
+      <% } %>
+    <% } %>
+  </section>
+
+  <section style="padding-top:0">
+    <h2>Uložené zákazky (tendre)</h2>
+    <% if (!savedTendre.length) { %>
+      <div class="empty">
+        <h3>Zatiaľ žiadne uložené zákazky</h3>
+        <p><a href="/tendre">Prezrite si tendre</a> a uložte si tie, ktoré vás zaujímajú.</p>
+      </div>
+    <% } else { %>
+      <% for (const t of savedTendre) { %>
+        <%- include('partials/tender-card', { t }) %>
+      <% } %>
+    <% } %>
+  </section>
+
+  <section style="padding-top:0">
+    <h2>Moje objednávky</h2>
+    <% if (!orders.length) { %>
+      <p class="muted">Zatiaľ nemáte žiadne objednávky.</p>
+    <% } else { %>
+      <table class="t t--cards">
+        <thead>
+          <tr><th>Dátum</th><th>Služba</th><th>Stav</th></tr>
+        </thead>
+        <tbody>
+          <% for (const o of orders) { const svc = SERVICES.find(s => s.slug === o.service); %>
+            <tr>
+              <td data-label="Dátum"><%= fmtDate(o.created_at) %></td>
+              <td data-label="Služba"><%= svc ? svc.name : o.service %></td>
+              <td data-label="Stav"><span class="badge-stage s-watch"><%= o.status === 'nova' ? 'prijatá — ozveme sa' : o.status %></span></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+  </section>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

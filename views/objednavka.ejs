@@ -1,0 +1,80 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia">
+    <a href="/">Domov</a><span class="sep">›</span><a href="/sluzby">Služby</a><span class="sep">›</span>Objednávka
+  </nav>
+
+  <div class="layout-detail">
+    <div>
+      <h1 style="font-size:1.9rem">Nezáväzná objednávka</h1>
+      <p class="muted">Ozveme sa vám, upresníme rozsah a cenu potvrdíme vopred. Odoslaním sa k ničomu nezaväzujete.</p>
+
+      <% if (error) { %>
+        <div class="error-summary" role="alert">
+          <h2>Formulár sa nepodarilo odoslať</h2>
+          <ul><li><%= error %></li></ul>
+        </div>
+      <% } %>
+
+      <form method="post" action="/objednavka" class="panel" novalidate>
+        <input type="hidden" name="sluzba" value="<%= service.slug %>">
+        <% if (vyzva) { %><input type="hidden" name="vyzva" value="<%= vyzva.slug %>"><% } %>
+        <% if (tender) { %><input type="hidden" name="tender" value="<%= tender.id %>"><% } %>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="o-name">Meno a priezvisko *</label>
+            <input id="o-name" name="name" type="text" autocomplete="name" required value="<%= values.name || '' %>">
+          </div>
+          <div class="field">
+            <label for="o-email">E-mail *</label>
+            <input id="o-email" name="email" type="email" autocomplete="email" required value="<%= values.email || (user ? user.email : '') %>">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="o-phone">Telefón</label>
+            <input id="o-phone" name="phone" type="tel" autocomplete="tel" value="<%= values.phone || '' %>">
+            <div class="hint">nepovinné</div>
+          </div>
+          <div class="field">
+            <label for="o-ico">IČO</label>
+            <input id="o-ico" name="ico" type="text" inputmode="numeric" value="<%= values.ico || (user && user.ico ? user.ico : '') %>">
+            <div class="hint">nepovinné</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="o-company">Názov firmy / organizácie</label>
+          <input id="o-company" name="company" type="text" autocomplete="organization" value="<%= values.company || (user && user.company ? user.company : '') %>">
+          <div class="hint">nepovinné</div>
+        </div>
+        <div class="field">
+          <label for="o-message">Stručne opíšte váš zámer</label>
+          <textarea id="o-message" name="message" rows="5"><%= values.message || '' %></textarea>
+          <div class="hint">nepovinné — čím viac napíšete, tým presnejšie vám odpovieme</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Odoslať objednávku</button>
+      </form>
+    </div>
+
+    <aside>
+      <div class="searchcard">
+        <span class="ribbon">Zľava −50 %</span>
+        <h2 style="margin-bottom:.4rem"><%= service.name %></h2>
+        <% if (vyzva) { %>
+          <p class="small">K výzve: <a href="/vyzvy/<%= vyzva.slug %>"><%= vyzva.title %></a></p>
+        <% } %>
+        <% if (tender) { %>
+          <p class="small">K tendru: <a href="/tendre/<%= tender.id %>"><%= tender.title %></a></p>
+        <% } %>
+        <p style="margin:.6rem 0 0"><span class="muted" style="text-decoration:line-through"><%= service.origPrice.toLocaleString('sk-SK') %> €</span>
+          <strong style="font-size:1.4rem;color:var(--ink)"> od <%= service.price.toLocaleString('sk-SK') %> €</strong>
+          <span class="small muted">bez DPH</span></p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

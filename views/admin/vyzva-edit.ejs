@@ -1,0 +1,103 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('partials/menu', { active: 'vyzvy' }) %>
+
+  <div>
+    <h1 style="font-size:1.7rem"><%= vyzva ? 'Upraviť výzvu' : 'Nová manuálna výzva' %></h1>
+    <% if (vyzva && vyzva.source === 'itms') { %>
+      <div class="alert alert-info">Táto výzva pochádza z ITMS — polia prepíše najbližší ingest. Trvalé úpravy rob len pri manuálnych výzvach.</div>
+    <% } %>
+
+    <form method="post" action="<%= vyzva ? `/admin/vyzvy/${vyzva.id}` : '/admin/vyzvy/nova' %>" class="panel">
+      <% if (!vyzva) { %>
+        <div class="field">
+          <label for="a-slug">Slug (URL)</label>
+          <input id="a-slug" name="slug" type="text" placeholder="necháš prázdne = vygeneruje sa z názvu">
+        </div>
+      <% } %>
+      <div class="field">
+        <label for="a-title">Názov *</label>
+        <input id="a-title" name="title" type="text" required value="<%= vyzva ? vyzva.title : '' %>">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="a-provider">Vyhlasovateľ</label>
+          <input id="a-provider" name="provider" type="text" value="<%= vyzva && vyzva.provider ? vyzva.provider : '' %>">
+        </div>
+        <div class="field">
+          <label for="a-program">Program / poznámka</label>
+          <input id="a-program" name="program" type="text" value="<%= vyzva && vyzva.program ? vyzva.program : '' %>">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="a-category">Oblasť</label>
+          <select id="a-category" name="category">
+            <% for (const c of CATEGORIES) { %><option value="<%= c %>" <%= vyzva && vyzva.category === c ? 'selected' : '' %>><%= c %></option><% } %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="a-status">Stav</label>
+          <select id="a-status" name="status">
+            <option value="otvorena" <%= !vyzva || vyzva.status === 'otvorena' ? 'selected' : '' %>>otvorená</option>
+            <option value="uzavreta" <%= vyzva && vyzva.status === 'uzavreta' ? 'selected' : '' %>>uzavretá</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="a-applicants">Oprávnení žiadatelia</label>
+          <input id="a-applicants" name="applicants" type="text" value="<%= vyzva ? vyzva.applicants : '' %>" placeholder="napr. podnikatelia, samospráva">
+        </div>
+        <div class="field">
+          <label for="a-regions">Oprávnené územie</label>
+          <input id="a-regions" name="regions" type="text" value="<%= vyzva ? vyzva.regions : 'Celé Slovensko' %>">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="a-amount-min">Suma od (€)</label>
+          <input id="a-amount-min" name="amount_min" type="number" min="0" value="<%= vyzva && vyzva.amount_min ? Number(vyzva.amount_min) : '' %>">
+        </div>
+        <div class="field">
+          <label for="a-amount-max">Suma do (€)</label>
+          <input id="a-amount-max" name="amount_max" type="number" min="0" value="<%= vyzva && vyzva.amount_max ? Number(vyzva.amount_max) : '' %>">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="a-allocation">Alokácia (€)</label>
+          <input id="a-allocation" name="allocation" type="number" min="0" value="<%= vyzva && vyzva.allocation ? Number(vyzva.allocation) : '' %>">
+        </div>
+        <div class="field">
+          <label for="a-deadline">Uzávierka</label>
+          <input id="a-deadline" name="deadline" type="date" value="<%= vyzva && vyzva.deadline ? new Date(vyzva.deadline).toISOString().slice(0,10) : '' %>">
+        </div>
+      </div>
+      <div class="field">
+        <label for="a-deadline-note">Poznámka k termínu (keď nie je pevná uzávierka)</label>
+        <input id="a-deadline-note" name="deadline_note" type="text" value="<%= vyzva && vyzva.deadline_note ? vyzva.deadline_note : '' %>">
+      </div>
+      <div class="field">
+        <label for="a-summary">Krátky popis *</label>
+        <textarea id="a-summary" name="summary" rows="3" required><%= vyzva ? vyzva.summary : '' %></textarea>
+      </div>
+      <div class="field">
+        <label for="a-details">Detailný popis</label>
+        <textarea id="a-details" name="details" rows="6"><%= vyzva && vyzva.details ? vyzva.details : '' %></textarea>
+      </div>
+      <div class="field">
+        <label for="a-source-url">Zdroj (URL)</label>
+        <input id="a-source-url" name="source_url" type="url" value="<%= vyzva && vyzva.source_url ? vyzva.source_url : '' %>">
+      </div>
+      <div style="display:flex;gap:.6rem">
+        <button type="submit" class="btn btn-primary">Uložiť</button>
+        <a class="btn btn-ghost" href="/admin/vyzvy">Zrušiť</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

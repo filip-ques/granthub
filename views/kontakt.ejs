@@ -1,0 +1,42 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia"><a href="/">Domov</a><span class="sep">›</span>Kontakt</nav>
+
+  <div class="auth-wrap" style="max-width:640px;margin-top:1rem">
+    <h1>Kontakt</h1>
+    <p class="muted">Napíšte nám — ozveme sa čo najskôr.</p>
+
+    <% if (ok) { %>
+      <div class="alert alert-success" role="alert">
+        <strong>Správa odoslaná.</strong> Ďakujeme, čoskoro sa vám ozveme.
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="error-summary" role="alert">
+        <h2>Správu sa nepodarilo odoslať</h2>
+        <ul><li><%= error %></li></ul>
+      </div>
+    <% } %>
+
+    <form method="post" action="/kontakt" class="panel" novalidate>
+      <div class="field">
+        <label for="k-name">Meno a priezvisko *</label>
+        <input id="k-name" name="name" type="text" autocomplete="name" required value="<%= values.name || '' %>">
+      </div>
+      <div class="field">
+        <label for="k-email">E-mail *</label>
+        <input id="k-email" name="email" type="email" autocomplete="email" required value="<%= values.email || (user ? user.email : '') %>">
+      </div>
+      <div class="field">
+        <label for="k-message">Vaša správa *</label>
+        <textarea id="k-message" name="message" rows="6" required><%= values.message || '' %></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Odoslať správu</button>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,116 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+
+<div class="container">
+  <nav class="breadcrumb" aria-label="Omrvinková navigácia">
+    <a href="/">Domov</a><span class="sep">›</span><a href="/tendre">Tendre</a><span class="sep">›</span><%= tender.title.length > 80 ? tender.title.slice(0, 80) + '…' : tender.title %>
+  </nav>
+
+  <div class="layout-detail">
+    <div class="vyzva-detail">
+      <%
+        const tdl = tender.deadline ? Math.ceil((new Date(tender.deadline) - Date.now()) / 86400000) : null;
+        const tdlCls = tdl == null ? 'muted' : tdl < 0 ? 'closed' : tdl <= 7 ? 'urgent' : tdl <= 30 ? 'soon' : 'ok';
+      %>
+      <div class="tender-meta" style="margin-bottom:.6rem">
+        <span class="tag brand"><%= industryLabel(tender.industry) %></span>
+        <% if (tender.notice_type) { %><span class="tag"><%= noticeLabel(tender.notice_type) %></span><% } %>
+        <% if (tdl != null && tdl >= 0) { %><span class="tag accent"><%= tdl === 0 ? 'posledný deň' : fmtDays(tdl) %></span>
+        <% } else if (tdl != null) { %><span class="tag">uzavretá</span><% } %>
+      </div>
+      <h1 style="font-size:1.9rem"><%= tender.title %></h1>
+      <% if (tender.description) { %>
+        <p class="lead" style="font-size:1.05rem"><%= tender.description %></p>
+      <% } %>
+
+      <h2>Parametre zákazky</h2>
+      <table class="t">
+        <tbody>
+          <tr><th scope="row">Obstarávateľ</th><td><%= tender.buyer_name || 'neuvedený' %></td></tr>
+          <tr><th scope="row">Typ oznámenia</th><td><%= noticeLabel(tender.notice_type) %></td></tr>
+          <% if (tender.procedure_type) { %><tr><th scope="row">Postup</th><td><%= tender.procedure_type %></td></tr><% } %>
+          <tr><th scope="row">Predpokladaná hodnota</th><td><%= tender.value_eur ? fmtEur(tender.value_eur) : 'neuvedená' %></td></tr>
+          <% if (tender.publication_date) { %><tr><th scope="row">Dátum zverejnenia</th><td><%= fmtDate(tender.publication_date) %></td></tr><% } %>
+          <tr><th scope="row">Lehota na predloženie</th><td class="dl <%= tdlCls %>"><%= tender.deadline ? new Date(tender.deadline).toLocaleString('sk-SK', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'neuvedená' %></td></tr>
+          <% if (tender.region_name) { %><tr><th scope="row">Miesto plnenia</th><td><%= tender.region_name %></td></tr><% } %>
+          <tr><th scope="row">Identifikátor (TED)</th><td class="mono"><%= tender.external_id %></td></tr>
+        </tbody>
+      </table>
+
+      <% const cpvs = tender.cpv_codes || []; %>
+      <% if (cpvs.length) { %>
+        <h2>CPV klasifikácia</h2>
+        <ul>
+          <% for (const c of cpvs.slice(0, 8)) { %>
+            <li><span class="mono"><%= c %></span> — <%= cpvLabel(c) %></li>
+          <% } %>
+        </ul>
+      <% } %>
+
+      <h2>Oficiálne zdroje</h2>
+      <ul>
+        <% if (tender.source_url) { %>
+          <li><a href="<%= tender.source_url %>" target="_blank" rel="noopener">Oznámenie v európskom vestníku TED</a></li>
+        <% } %>
+        <% if (tender.documents_url) { %>
+          <li><a href="<%= tender.documents_url %>" target="_blank" rel="noopener">Oznámenie v PDF</a></li>
+        <% } %>
+      </ul>
+
+      <% if (user) { %>
+        <form method="post" action="/tendre/<%= tender.id %>/ulozit" class="mt2">
+          <% if (saved) { %>
+            <input type="hidden" name="akcia" value="odobrat">
+            <button class="btn btn-ghost">Odobrať z uložených</button>
+          <% } else { %>
+            <button class="btn btn-ghost">Uložiť zákazku do účtu</button>
+          <% } %>
+        </form>
+      <% } else { %>
+        <p class="small mt2"><a href="/prihlasenie?next=/tendre/<%= tender.id %>">Prihláste sa</a> a uložte si zákazku do svojho účtu — zadarmo, stačí e-mail.</p>
+      <% } %>
+    </div>
+
+    <aside>
+      <% if (!user) { %>
+        <div class="searchcard" style="margin-bottom:1.2rem;border-top-color:var(--yellow)">
+          <h2 style="margin-bottom:.4rem">Podobné tendre e-mailom</h2>
+          <p class="small">Zaregistrujte sa zdarma, vyberte si odvetvia a nové zákazky vám pošleme hneď po zverejnení.</p>
+          <a class="btn btn-accent btn-block" href="/registracia">Registrácia zdarma</a>
+        </div>
+      <% } %>
+      <div class="searchcard" style="margin-bottom:1.2rem">
+        <span class="ribbon">Zľava −50 %</span>
+        <h2 style="margin-bottom:.4rem">Spĺňate podmienky tohto tendra?</h2>
+        <p class="small">Skontrolujeme referencie, obrat aj spôsobilosť a odporučíme, či do zákazky ísť.</p>
+        <p style="margin:.6rem 0 1rem"><span class="muted" style="text-decoration:line-through">499 €</span>
+          <strong style="font-size:1.4rem;color:var(--ink)"> od 249 €</strong> <span class="small muted">bez DPH</span></p>
+        <a class="btn btn-primary btn-block" href="/objednavka?sluzba=overenie-podmienok-tendra&tender=<%= tender.id %>">Overiť podmienky</a>
+      </div>
+      <div class="searchcard" style="margin-bottom:1.2rem">
+        <span class="ribbon">Zľava −50 %</span>
+        <h2 style="margin-bottom:.4rem">Pripravíme podanie za vás</h2>
+        <p class="small">Kompletná ponuka na kľúč — formuláre, vyhlásenia, elektronické podanie.</p>
+        <p style="margin:.6rem 0 1rem"><span class="muted" style="text-decoration:line-through">999 €</span>
+          <strong style="font-size:1.4rem;color:var(--ink)"> od 499 €</strong> <span class="small muted">bez DPH</span></p>
+        <a class="btn btn-ghost btn-block" href="/objednavka?sluzba=vytvorenie-podania-tendra&tender=<%= tender.id %>">Objednať podanie</a>
+      </div>
+      <div class="searchcard">
+        <h2 style="margin-bottom:.4rem">Nezmeškajte ďalší tender</h2>
+        <p class="small">Radar vám pošle e-mail o každej novej zákazke z vašich odvetví. Zadarmo.</p>
+        <a class="btn btn-ghost btn-block" href="/grantovy-radar">Zapnúť radar</a>
+      </div>
+    </aside>
+  </div>
+
+  <% if (similar.length) { %>
+    <section class="vyzva-similar" style="padding-top:1rem">
+      <h2>Podobné zákazky</h2>
+      <% for (const t of similar) { %>
+        <%- include('partials/tender-card', { t }) %>
+      <% } %>
+    </section>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

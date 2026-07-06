@@ -1,0 +1,29 @@
+<%
+// očakáva: t (tender)
+const tdl = t.deadline ? Math.ceil((new Date(t.deadline) - Date.now()) / 86400000) : null;
+const tdlCls = tdl == null ? 'muted' : tdl < 0 ? 'closed' : tdl <= 7 ? 'urgent' : tdl <= 30 ? 'soon' : 'ok';
+%>
+<article class="tender">
+  <div class="tender-meta" style="margin-bottom:.5rem">
+    <span class="tag brand"><%= industryLabel(t.industry) %></span>
+    <% if (t.notice_type) { %><span class="tag"><%= noticeLabel(t.notice_type) %></span><% } %>
+    <% if (t.region_name) { %><span class="tag"><%= t.region_name %></span><% } %>
+  </div>
+  <h3><a href="/tendre/<%= t.id %>"><%= t.title %></a></h3>
+  <p class="buyer"><strong><%= t.buyer_name || 'Obstarávateľ neuvedený' %></strong><% if (t.description) { %> — <%= t.description.length > 180 ? t.description.slice(0, 177) + '…' : t.description %><% } %></p>
+  <div class="tender-meta">
+    <span class="meta-item"><strong>Hodnota:</strong> <%= t.value_eur ? fmtEur(t.value_eur) : 'neuvedená' %></span>
+    <% if (t.main_cpv) { %><span class="meta-item"><strong>CPV:</strong> <span class="mono"><%= t.main_cpv %></span> <%= cpvLabel(t.main_cpv) %></span><% } %>
+    <% if (t.publication_date) { %><span class="meta-item"><strong>Zverejnené:</strong> <%= fmtDate(t.publication_date) %></span><% } %>
+  </div>
+  <div class="tender-foot">
+    <span class="dl <%= tdlCls %>">
+      <% if (t.deadline) { %>
+        Lehota <%= fmtDate(t.deadline) %><% if (tdl != null && tdl >= 0) { %> · <%= fmtDays(tdl) %><% } else { %> · uzavretá<% } %>
+      <% } else { %>Lehota neuvedená<% } %>
+    </span>
+    <span style="display:flex;gap:.5rem;align-items:center">
+      <a class="btn btn-ghost btn-sm" href="/tendre/<%= t.id %>">Detail zákazky</a>
+    </span>
+  </div>
+</article>
