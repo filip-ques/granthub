@@ -10,7 +10,20 @@ const pool = new Pool({
   max: 10,
 });
 
+// Beh v zdieľanom Postgres serveri: vlastná schéma (napr. granthub) cez DATABASE_SCHEMA.
+// Pooler (PgBouncer) beží v session móde, takže SET per pripojenie drží.
+const schema = process.env.DATABASE_SCHEMA;
+if (schema && /^[a-z_][a-z0-9_]*$/.test(schema)) {
+  pool.on('connect', (client) => {
+    client.query(`SET search_path TO ${schema}, public`).catch((e) =>
+      console.error('search_path zlyhal:', e.message));
+  });
+}
+
 async function init() {
+  if (schema && /^[a-z_][a-z0-9_]*$/.test(schema)) {
+    await pool.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+  }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id         SERIAL PRIMARY KEY,

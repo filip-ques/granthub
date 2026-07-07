@@ -9,7 +9,8 @@ export class GranthubContainer extends Container {
     // Secrets Workera (wrangler secret put ...) sa prenesú do kontajnera ako env premenné
     this.envVars = {
       DATABASE_URL: env.DATABASE_URL,
-      DATABASE_SSL: env.DATABASE_SSL || '1',
+      DATABASE_SSL: env.DATABASE_SSL || '0',
+      DATABASE_SCHEMA: env.DATABASE_SCHEMA || 'granthub',
       SESSION_SECRET: env.SESSION_SECRET,
       SMTP_HOST: env.SMTP_HOST,
       SMTP_PORT: env.SMTP_PORT || '587',
