@@ -86,6 +86,48 @@ async function init() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    CREATE TABLE IF NOT EXISTS company_contracts (
+      id          SERIAL PRIMARY KEY,
+      ico         TEXT NOT NULL,
+      ext_id      TEXT,
+      subject     TEXT NOT NULL DEFAULT '',
+      counterparty TEXT NOT NULL DEFAULT '',
+      role        TEXT NOT NULL DEFAULT '',
+      amount_eur  NUMERIC,
+      signed_at   DATE,
+      effective_at DATE,
+      url         TEXT,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS ix_contracts_ico ON company_contracts (ico, signed_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_contracts_ext ON company_contracts (ico, ext_id) WHERE ext_id IS NOT NULL;
+
+    CREATE TABLE IF NOT EXISTS company_projects (
+      id          SERIAL PRIMARY KEY,
+      ico         TEXT NOT NULL,
+      ext_id      TEXT,
+      code        TEXT NOT NULL DEFAULT '',
+      title       TEXT NOT NULL DEFAULT '',
+      programme   TEXT NOT NULL DEFAULT '',
+      amount_eur  NUMERIC,
+      status      TEXT NOT NULL DEFAULT '',
+      started_at  DATE,
+      url         TEXT,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS ix_projects_ico ON company_projects (ico, started_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_projects_ext ON company_projects (ico, ext_id) WHERE ext_id IS NOT NULL;
+
+    CREATE TABLE IF NOT EXISTS company_info (
+      ico         TEXT PRIMARY KEY,
+      name        TEXT NOT NULL DEFAULT '',
+      address     TEXT NOT NULL DEFAULT '',
+      legal_form  TEXT NOT NULL DEFAULT '',
+      established DATE,
+      source_url  TEXT,
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
     CREATE TABLE IF NOT EXISTS semp_registry (
       id          SERIAL PRIMARY KEY,
       ico         TEXT NOT NULL,

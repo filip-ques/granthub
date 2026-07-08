@@ -11,6 +11,7 @@ const { runRadar, unsubToken } = require('./src/radarjob');
 const admin = require('./src/admin');
 const { runTenderIngest } = require('./src/tender-ingest');
 const { runScrapers } = require('./src/scrape-ingest');
+const { runCompanyRefresh } = require('./src/company');
 const tcat = require('./src/tender-catalog');
 const { CATEGORIES, APPLICANTS, REGIONS, SEGMENTS, SERVICES } = require('./src/data');
 
@@ -415,6 +416,34 @@ app.get('/ucet/produkty/:id/zhody', auth.requireLogin, async (req, res, next) =>
   res.render('zona/zhody', { title: `Zhody — ${product.name}`, product, matches: parts.length ? matches : [] });
 });
 
+// ---------- Moja firma (verejné údaje podľa IČO) ----------
+app.get('/ucet/firma', auth.requireLogin, async (req, res) => {
+  const u = res.locals.user;
+  const ico = u && u.ico ? String(u.ico).replace(/\D/g, '') : '';
+
+  // Auto-načítanie na pozadí, keď firma chýba/je staré (>7 dní) — stránka ostáva okamžitá
+  let refreshing = false;
+  if (ico) {
+    const { rows: fresh } = await pool.query('SELECT updated_at FROM company_info WHERE ico = $1', [ico]);
+    const stale = !fresh.length || (Date.now() - new Date(fresh[0].updated_at).getTime()) > 7 * 86400000;
+    if (stale) {
+      refreshing = true;
+      require('./src/company').importCompany(ico).catch((e) => console.error('[firma auto]', e.message));
+    }
+  }
+
+  const [info, contracts, projects] = ico ? await Promise.all([
+    pool.query('SELECT * FROM company_info WHERE ico = $1', [ico]).then((r) => r.rows[0] || null),
+    pool.query('SELECT * FROM company_contracts WHERE ico = $1 ORDER BY signed_at DESC NULLS LAST LIMIT 100', [ico]).then((r) => r.rows),
+    pool.query('SELECT * FROM company_projects WHERE ico = $1 ORDER BY started_at DESC NULLS LAST LIMIT 100', [ico]).then((r) => r.rows),
+  ]) : [null, [], []];
+
+  const contractsTotal = contracts.reduce((sum, c) => sum + Number(c.amount_eur || 0), 0);
+  res.render('zona/firma', {
+    title: 'Moja firma', ico, info, contracts, projects, contractsTotal, refreshing,
+  });
+});
+
 // ---------- Kalkulačka de minimis ----------
 const DM_LIMIT = 300000;        // nariadenie (EÚ) 2023/2831, jediný podnik / 3 kĺzavé roky
 const DM_LIMIT_DOPRAVA = 100000; // cestná nákladná doprava (do 31.12.2023, po novom tiež 300k okrem výnimiek)
@@ -779,8 +808,9 @@ app.post('/cron/ingest', cronAuth, async (req, res, next) => {
   try {
     const stats = await runIngest();
     const scraped = await runScrapers();
-    console.log('[cron] ingest:', JSON.stringify({ itms: stats, ...scraped }));
-    res.json({ itms: stats, ...scraped });
+    const company = await runCompanyRefresh().catch((e) => ({ error: e.message }));
+    console.log('[cron] ingest:', JSON.stringify({ itms: stats, ...scraped, company }));
+    res.json({ itms: stats, ...scraped, company });
   } catch (e) { next(e); }
 });
 
@@ -853,6 +883,8 @@ function startInternalCron() {
     catch (e) { console.error('[cron] ingest zlyhal:', e.message); }
     try { console.log('[cron] scrape:', JSON.stringify(await runScrapers())); }
     catch (e) { console.error('[cron] scrape zlyhal:', e.message); }
+    try { console.log('[cron] company:', JSON.stringify(await runCompanyRefresh())); }
+    catch (e) { console.error('[cron] company zlyhal:', e.message); }
     try { console.log('[cron] semp:', JSON.stringify(await require('./src/semp-bulk').runSempBulk())); }
     catch (e) { console.error('[cron] semp zlyhal:', e.message); }
     try { console.log('[cron] tendre:', JSON.stringify(await runTenderIngest())); }

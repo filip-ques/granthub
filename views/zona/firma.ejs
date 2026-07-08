@@ -1,0 +1,86 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone">
+  <%- include('menu', { active: 'firma' }) %>
+  <div>
+    <h1 style="font-size:1.7rem">Moja firma</h1>
+    <p class="muted">Verejne dostupné údaje o vašej firme podľa IČO — základné údaje z registra, verejné zmluvy (CRZ) a eurofondové projekty (ITMS). Aktualizujeme raz týždenne.</p>
+
+    <% if (!ico) { %>
+      <div class="alert alert-info" role="alert">Zadajte IČO svojej firmy v <a href="/ucet">profile účtu</a> — automaticky sem načítame verejné údaje, zmluvy aj projekty.</div>
+    <% } else { %>
+      <% if (refreshing) { %>
+        <div class="alert alert-info" role="alert"><strong>Načítavame verejné údaje pre IČO <span class="mono"><%= ico %></span>…</strong> Obnovte stránku o pár sekúnd — dáta sa dopĺňajú na pozadí.</div>
+      <% } %>
+
+      <!-- Základné údaje -->
+      <div class="panel">
+        <h2 style="font-size:1.2rem;margin-top:0">Základné údaje</h2>
+        <% if (info) { %>
+          <table class="t">
+            <tbody>
+              <tr><th scope="row" style="width:180px">Názov</th><td><%= info.name %></td></tr>
+              <tr><th scope="row">IČO</th><td class="mono"><%= info.ico %></td></tr>
+              <% if (info.address) { %><tr><th scope="row">Sídlo</th><td><%= info.address %></td></tr><% } %>
+              <% if (info.legal_form) { %><tr><th scope="row">Register</th><td><%= info.legal_form %></td></tr><% } %>
+              <% if (info.established) { %><tr><th scope="row">Dátum vzniku</th><td><%= fmtDate(info.established) %></td></tr><% } %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p class="muted">Údaje z registra sa načítavajú… obnovte stránku o chvíľu.</p>
+        <% } %>
+      </div>
+
+      <!-- Verejné zmluvy -->
+      <div class="panel-head" style="margin-top:1.5rem">
+        <h2 style="margin:0">Verejné zmluvy (CRZ)</h2>
+        <% if (contracts.length) { %><span class="small muted"><%= contracts.length %> zmlúv · spolu <%= fmtEur(contractsTotal) %></span><% } %>
+      </div>
+      <% if (!contracts.length) { %>
+        <div class="empty"><h3>Žiadne verejné zmluvy</h3><p>V Centrálnom registri zmlúv sme pre toto IČO nenašli zmluvy (alebo sa práve načítavajú).</p></div>
+      <% } else { %>
+        <table class="t t--cards">
+          <thead><tr><th>Dátum</th><th>Predmet</th><th>Protistrana</th><th>Rola</th><th>Suma</th><th data-label=""></th></tr></thead>
+          <tbody>
+            <% for (const z of contracts) { %>
+              <tr>
+                <td data-label="Dátum" class="small nowrap"><%= z.signed_at ? fmtDate(z.signed_at) : '—' %></td>
+                <td data-label="Predmet"><%= z.subject %></td>
+                <td data-label="Protistrana" class="small"><%= z.counterparty || '—' %></td>
+                <td data-label="Rola"><span class="badge-stage <%= z.role === 'dodávateľ' ? 's-won' : 's-submitted' %>"><%= z.role %></span></td>
+                <td data-label="Suma"><strong><%= z.amount_eur != null ? fmtEur(z.amount_eur) : '—' %></strong></td>
+                <td data-label=""><% if (z.url) { %><a class="btn btn-ghost btn-sm" href="<%= z.url %>" target="_blank" rel="noopener">Zmluva</a><% } %></td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      <% } %>
+
+      <!-- Eurofondové projekty -->
+      <div class="panel-head" style="margin-top:1.5rem">
+        <h2 style="margin:0">Eurofondové projekty (ITMS)</h2>
+      </div>
+      <% if (!projects.length) { %>
+        <div class="empty"><h3>Žiadne eurofondové projekty</h3><p>V ITMS sme pre toto IČO nenašli projekty. (Zdroj ITMS býva občas dočasne nedostupný — skúsime znova pri týždennej aktualizácii.)</p></div>
+      <% } else { %>
+        <table class="t t--cards">
+          <thead><tr><th>Kód</th><th>Názov</th><th>Suma NFP</th><th>Stav</th><th data-label=""></th></tr></thead>
+          <tbody>
+            <% for (const p of projects) { %>
+              <tr>
+                <td data-label="Kód" class="mono small"><%= p.code || '—' %></td>
+                <td data-label="Názov"><%= p.title %></td>
+                <td data-label="Suma NFP"><strong><%= p.amount_eur != null ? fmtEur(p.amount_eur) : '—' %></strong></td>
+                <td data-label="Stav" class="small"><%= p.status || '—' %></td>
+                <td data-label=""><% if (p.url) { %><a class="btn btn-ghost btn-sm" href="<%= p.url %>" target="_blank" rel="noopener">Zdroj</a><% } %></td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      <% } %>
+
+      <p class="small muted" style="margin-top:1.2rem">Zdroje: Register právnických osôb (Štatistický úrad SR), Centrálny register zmlúv (crz.gov.sk), ITMS2014+ open data. Údaje sú verejne dostupné a slúžia len na informáciu.</p>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/footer') %>
