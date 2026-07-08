@@ -61,7 +61,11 @@ function parseDate(v) {
 function parseDeadline(v) {
   v = first(v);
   if (!v) return null;
-  const d = new Date(String(v).replace('Z', '+00:00'));
+  const s = String(v);
+  // TED formát býva „2026-08-07+02:00" (dátum + offset bez času) — ber koniec dňa
+  const dateOnly = s.match(/^(\d{4}-\d{2}-\d{2})(?![T\d])/);
+  const iso = dateOnly ? `${dateOnly[1]}T23:59:00` : s.replace('Z', '+00:00');
+  const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
