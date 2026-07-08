@@ -409,21 +409,24 @@ const DM_LIMIT_DOPRAVA = 100000; // cestná nákladná doprava (do 31.12.2023, p
 
 app.get('/ucet/deminimis', auth.requireLogin, async (req, res) => {
   const u = res.locals.user;
-  // Auto-načítanie z registra na pozadí: firma používateľa, keď má IČO a dáta chýbajú/sú staré (>7 dní).
-  // Nikdy neblokuje render — stránka vždy ukáže uložené dáta okamžite.
-  let refreshing = false;
-  if (u && u.ico && u.ico.length >= 6) {
-    const stale = !u.semp_refreshed_at || (Date.now() - new Date(u.semp_refreshed_at).getTime()) > 7 * 86400000;
-    if (stale) {
-      refreshing = true;
-      pool.query('UPDATE users SET semp_refreshed_at = now() WHERE id = $1', [u.id]).catch(() => {});
-      require('./src/semp').importForUser(u.id, u.ico)
-        .catch((e) => console.error('[semp auto]', e.message));
-    }
-  }
-  const { rows: aids } = await pool.query(
-    'SELECT * FROM deminimis_aids WHERE user_id = $1 ORDER BY granted_at DESC', [req.session.userId]);
-  // kĺzavé 3-ročné okno ku dnešku (nariadenie 2023/2831: 3 roky spätne od poskytnutia)
+  const { lookupByIco } = require('./src/semp-bulk');
+  const ico = u && u.ico ? String(u.ico).replace(/\\D/g, '') : '';
+
+  // Ručné záznamy používateľa + oficiálny register (okamžite z lokálnej tabuľky)
+  const [{ rows: manual }, registry] = await Promise.all([
+    pool.query("SELECT * FROM deminimis_aids WHERE user_id = $1 AND source = 'manual' ORDER BY granted_at DESC", [req.session.userId]),
+    ico ? lookupByIco(ico) : Promise.resolve([]),
+  ]);
+
+  // Zjednotený zoznam: register (source='register') + ručné (source='manual')
+  const aids = [
+    ...registry.map((r) => ({
+      id: 'r' + r.id, source: 'register', provider: r.provider, scheme_code: r.regulation,
+      note: r.instrument, ico: r.ico, amount_eur: r.amount_eur, granted_at: r.granted_at,
+    })),
+    ...manual.map((m) => ({ ...m, source: 'manual' })),
+  ].sort((a, b) => new Date(b.granted_at) - new Date(a.granted_at));
+
   const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 3);
   const inWindow = aids.filter((a) => new Date(a.granted_at) >= cutoff);
   const drawn = inWindow.reduce((s2, a) => s2 + Number(a.amount_eur), 0);
@@ -431,8 +434,8 @@ app.get('/ucet/deminimis', auth.requireLogin, async (req, res) => {
     title: 'De minimis kalkulačka',
     aids, inWindow, drawn,
     remaining: Math.max(0, DM_LIMIT - drawn),
-    limit: DM_LIMIT, cutoff, refreshing,
-    ico: u && u.ico ? u.ico : '',
+    limit: DM_LIMIT, cutoff, refreshing: false, ico,
+    registryCount: registry.length,
     savedMsg: req.query.ok === '1',
   });
 });
@@ -452,20 +455,10 @@ app.post('/ucet/deminimis', auth.requireLogin, async (req, res) => {
   res.redirect('/ucet/deminimis?ok=1');
 });
 
-app.post('/ucet/deminimis/import', auth.requireLogin, rateLimit(5, 15 * 60 * 1000), async (req, res, next) => {
-  try {
-    const ico = String(req.body.ico || '').replace(/\D/g, '').slice(0, 12);
-    if (ico.length < 6) return res.redirect('/ucet/deminimis');
-    const { importForUser } = require('./src/semp');
-    const r = await importForUser(req.session.userId, ico);
-    res.redirect(`/ucet/deminimis?ok=1&semp=${r.approved}`);
-  } catch (e) { next(e); }
-});
-
 app.post('/cron/semp', cronAuth, async (req, res, next) => {
   try {
-    const { runSempRefresh } = require('./src/semp');
-    const stats = await runSempRefresh(req.query.force === '1');
+    const { runSempBulk } = require('./src/semp-bulk');
+    const stats = await runSempBulk(req.query.force === '1');
     console.log('[cron] semp:', JSON.stringify(stats));
     res.json(stats);
   } catch (e) { next(e); }
@@ -735,11 +728,6 @@ app.post('/ucet', auth.requireLogin, async (req, res) => {
     [String(req.body.name || '').trim(), String(req.body.company || '').trim(),
      ico, req.session.userId]
   );
-  // nové/zmenené IČO → načítaj de minimis z registra na pozadí
-  if (ico.length >= 6 && ico !== (res.locals.user && res.locals.user.ico)) {
-    pool.query('UPDATE users SET semp_refreshed_at = now() WHERE id = $1', [req.session.userId]).catch(() => {});
-    require('./src/semp').importForUser(req.session.userId, ico).catch((e) => console.error('[semp profil]', e.message));
-  }
   res.redirect('/ucet?ulozene=1');
 });
 
@@ -829,7 +817,7 @@ function startInternalCron() {
     catch (e) { console.error('[cron] ingest zlyhal:', e.message); }
     try { console.log('[cron] scrape:', JSON.stringify(await runScrapers())); }
     catch (e) { console.error('[cron] scrape zlyhal:', e.message); }
-    try { console.log('[cron] semp:', JSON.stringify(await require('./src/semp').runSempRefresh())); }
+    try { console.log('[cron] semp:', JSON.stringify(await require('./src/semp-bulk').runSempBulk())); }
     catch (e) { console.error('[cron] semp zlyhal:', e.message); }
     try { console.log('[cron] tendre:', JSON.stringify(await runTenderIngest())); }
     catch (e) { console.error('[cron] tendre zlyhal:', e.message); }

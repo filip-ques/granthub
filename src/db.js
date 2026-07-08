@@ -86,6 +86,19 @@ async function init() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    CREATE TABLE IF NOT EXISTS semp_registry (
+      id          SERIAL PRIMARY KEY,
+      ico         TEXT NOT NULL,
+      name        TEXT NOT NULL DEFAULT '',
+      provider    TEXT NOT NULL DEFAULT '',
+      instrument  TEXT NOT NULL DEFAULT '',
+      nace        TEXT NOT NULL DEFAULT '',
+      regulation  TEXT NOT NULL DEFAULT '',
+      amount_eur  NUMERIC NOT NULL,
+      granted_at  DATE NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_semp_ico ON semp_registry (ico);
+
     CREATE TABLE IF NOT EXISTS deminimis_aids (
       id          SERIAL PRIMARY KEY,
       user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
