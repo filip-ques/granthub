@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://granthub.sk<%= typeof path !== 'undefined' && path !== '/' ? path : '' %>">
   <meta name="twitter:card" content="summary">
   <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
-  <link rel="stylesheet" href="/css/app.css">
-  <link rel="stylesheet" href="/css/gm.css">
+  <link rel="stylesheet" href="/css/app.css?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '1' %>">
+  <link rel="stylesheet" href="/css/gm.css?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '1' %>">
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"WebSite","name":"GrantHub","url":"https://granthub.sk/","inLanguage":"sk-SK",
    "potentialAction":{"@type":"SearchAction","target":"https://granthub.sk/vyzvy?q={q}","query-input":"required name=q"}}

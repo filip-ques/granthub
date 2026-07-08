@@ -14,6 +14,17 @@ const { runScrapers } = require('./src/scrape-ingest');
 const tcat = require('./src/tender-catalog');
 const { CATEGORIES, APPLICANTS, REGIONS, SEGMENTS, SERVICES } = require('./src/data');
 
+const crypto = require('crypto');
+const fs = require('fs');
+function assetVersion() {
+  try {
+    const buf = ['public/css/app.css', 'public/css/gm.css', 'public/js/app.js']
+      .map((f) => fs.readFileSync(path.join(__dirname, f))).join('');
+    return crypto.createHash('md5').update(buf).digest('hex').slice(0, 8);
+  } catch { return String(Date.now()); }
+}
+const ASSET_VERSION = assetVersion();
+
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const PROD = process.env.NODE_ENV === 'production';
@@ -94,7 +105,7 @@ app.use((req, res, next) => {
   res.locals.TENDER_REGIONS = tcat.TENDER_REGIONS;
   next();
 });
-app.use((req, res, next) => { res.locals.isAdmin = admin.isAdmin(res.locals.user); next(); });
+app.use((req, res, next) => { res.locals.isAdmin = admin.isAdmin(res.locals.user); res.locals.assetVersion = ASSET_VERSION; next(); });
 
 // --- Audit log: každá požiadavka (bez statiky) do activity_events ---
 app.use((req, res, next) => {
