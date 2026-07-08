@@ -400,6 +400,47 @@ app.get('/ucet/produkty/:id/zhody', auth.requireLogin, async (req, res, next) =>
   res.render('zona/zhody', { title: `Zhody — ${product.name}`, product, matches: parts.length ? matches : [] });
 });
 
+// ---------- Kalkulačka de minimis ----------
+const DM_LIMIT = 300000;        // nariadenie (EÚ) 2023/2831, jediný podnik / 3 kĺzavé roky
+const DM_LIMIT_DOPRAVA = 100000; // cestná nákladná doprava (do 31.12.2023, po novom tiež 300k okrem výnimiek)
+
+app.get('/ucet/deminimis', auth.requireLogin, async (req, res) => {
+  const { rows: aids } = await pool.query(
+    'SELECT * FROM deminimis_aids WHERE user_id = $1 ORDER BY granted_at DESC', [req.session.userId]);
+  // kĺzavé 3-ročné okno ku dnešku (nariadenie 2023/2831: 3 roky spätne od poskytnutia)
+  const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 3);
+  const inWindow = aids.filter((a) => new Date(a.granted_at) >= cutoff);
+  const drawn = inWindow.reduce((s2, a) => s2 + Number(a.amount_eur), 0);
+  res.render('zona/deminimis', {
+    title: 'De minimis kalkulačka',
+    aids, inWindow, drawn,
+    remaining: Math.max(0, DM_LIMIT - drawn),
+    limit: DM_LIMIT, cutoff,
+    savedMsg: req.query.ok === '1',
+  });
+});
+
+app.post('/ucet/deminimis', auth.requireLogin, async (req, res) => {
+  const amount = Number(String(req.body.amount_eur || '').replace(',', '.'));
+  const granted = String(req.body.granted_at || '');
+  if (Number.isFinite(amount) && amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(granted)) {
+    await pool.query(
+      `INSERT INTO deminimis_aids (user_id, ico, provider, scheme_code, note, amount_eur, granted_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [req.session.userId, String(req.body.ico || '').replace(/\D/g, '').slice(0, 12),
+       String(req.body.provider || '').trim().slice(0, 200),
+       String(req.body.scheme_code || '').trim().slice(0, 60),
+       String(req.body.note || '').trim().slice(0, 300) || null, amount, granted]);
+  }
+  res.redirect('/ucet/deminimis?ok=1');
+});
+
+app.post('/ucet/deminimis/:id/zmazat', auth.requireLogin, async (req, res) => {
+  await pool.query('DELETE FROM deminimis_aids WHERE id = $1 AND user_id = $2',
+    [Number(req.params.id) || 0, req.session.userId]);
+  res.redirect('/ucet/deminimis');
+});
+
 // ---------- Zdroje dát (po prihlásení) ----------
 const SOURCE_INFO = [
   { key: 'itms', name: 'ITMS / Program Slovensko', desc: 'Eurofondy — oficiálne open data API (opendata.itms2014.sk)', url: 'https://opendata.itms2014.sk' },

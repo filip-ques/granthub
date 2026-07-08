@@ -86,6 +86,20 @@ async function init() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    CREATE TABLE IF NOT EXISTS deminimis_aids (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      ico         TEXT NOT NULL,
+      provider    TEXT NOT NULL DEFAULT '',
+      scheme_code TEXT NOT NULL DEFAULT '',
+      note        TEXT,
+      amount_eur  NUMERIC NOT NULL,
+      granted_at  DATE NOT NULL,
+      source      TEXT NOT NULL DEFAULT 'manual',
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS ix_deminimis_user ON deminimis_aids (user_id, granted_at DESC);
+
     CREATE TABLE IF NOT EXISTS activity_events (
       id          SERIAL PRIMARY KEY,
       user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,

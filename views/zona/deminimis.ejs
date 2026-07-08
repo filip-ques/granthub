@@ -1,0 +1,60 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('menu', { active: 'deminimis' }) %>
+  <div>
+    <h1 style="font-size:1.7rem">De minimis kalkulačka</h1>
+    <p class="muted">Pomoc malého rozsahu podľa nariadenia (EÚ) 2023/2831: limit <strong>300 000 €</strong> pre jediný podnik za ľubovoľné 3 kĺzavé roky. Evidujte každú prijatú minimálnu pomoc (dotácie, vouchery, zvýhodnené úvery) vrátane prepojených firiem.</p>
+
+    <% if (savedMsg) { %><div class="alert alert-success" role="alert"><strong>Uložené.</strong></div><% } %>
+
+    <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.3rem">
+      <div class="kpi"><div class="num"><%= drawn.toLocaleString('sk-SK', {maximumFractionDigits: 0}) %> €</div><div class="lbl">čerpané v 3-ročnom okne (od <%= fmtDate(cutoff) %>)</div></div>
+      <div class="kpi" style="border-top-color:<%= remaining > 50000 ? 'var(--success)' : 'var(--error)' %>"><div class="num"><%= remaining.toLocaleString('sk-SK', {maximumFractionDigits: 0}) %> €</div><div class="lbl">zostávajúci priestor do limitu</div></div>
+      <div class="kpi"><div class="num"><%= Math.round(drawn / limit * 100) %> %</div><div class="lbl">vyčerpané z 300 000 €</div></div>
+    </div>
+    <% if (remaining < 50000) { %>
+      <div class="alert alert-error" role="alert"><strong>Pozor:</strong> blížite sa k stropu de minimis. Pomoc nad limit sa vracia aj s úrokmi — pred podaním žiadosti si overte presný stav.</div>
+    <% } %>
+
+    <form method="post" action="/ucet/deminimis" class="panel">
+      <h3 style="margin-top:0">Pridať prijatú pomoc</h3>
+      <div class="field-row">
+        <div class="field"><label for="dm-p">Poskytovateľ *</label><input id="dm-p" name="provider" required placeholder="napr. SIEA, MH SR, banka (záruka)"></div>
+        <div class="field"><label for="dm-s">Kód schémy</label><input id="dm-s" name="scheme_code" placeholder="napr. DM-6/2024"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="dm-a">Suma pomoci (€) *</label><input id="dm-a" name="amount_eur" type="number" step="0.01" min="0.01" required></div>
+        <div class="field"><label for="dm-d">Dátum poskytnutia *</label><input id="dm-d" name="granted_at" type="date" required></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="dm-i">IČO príjemcu</label><input id="dm-i" name="ico" inputmode="numeric" placeholder="vaša firma alebo prepojená"></div>
+        <div class="field"><label for="dm-n">Poznámka</label><input id="dm-n" name="note" placeholder="napr. inovačná poukážka"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" type="submit">Pridať</button>
+    </form>
+
+    <% if (!aids.length) { %>
+      <div class="empty"><h3>Zatiaľ žiadne záznamy</h3><p>Pridajte prijatú pomoc — sumy nájdete v zmluvách o poskytnutí pomoci alebo v centrálnom registri IS SEMP (semp.kti2dc.sk).</p></div>
+    <% } else { %>
+      <table class="t t--cards">
+        <thead><tr><th>Dátum</th><th>Poskytovateľ</th><th>Schéma</th><th>IČO</th><th>Suma</th><th>V okne</th><th data-label=""></th></tr></thead>
+        <tbody>
+          <% for (const a of aids) { const inW = new Date(a.granted_at) >= cutoff; %>
+            <tr>
+              <td data-label="Dátum"><%= fmtDate(a.granted_at) %></td>
+              <td data-label="Poskytovateľ"><%= a.provider %><% if (a.note) { %><br><span class="small muted"><%= a.note %></span><% } %></td>
+              <td data-label="Schéma" class="mono small"><%= a.scheme_code || '—' %></td>
+              <td data-label="IČO" class="mono small"><%= a.ico || '—' %></td>
+              <td data-label="Suma"><strong><%= Number(a.amount_eur).toLocaleString('sk-SK') %> €</strong></td>
+              <td data-label="V okne"><span class="badge-stage <%= inW ? 's-preparing' : 's-won' %>"><%= inW ? 'počíta sa' : 'mimo okna' %></span></td>
+              <td data-label=""><form method="post" action="/ucet/deminimis/<%= a.id %>/zmazat" data-confirm="Zmazať záznam?"><button class="btn btn-danger btn-sm">Zmazať</button></form></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+    <p class="small muted">Kalkulačka je orientačná pomôcka, nie právne záväzný výpočet — rozhodujúca je evidencia v IS SEMP a čestné vyhlásenie. Limit platí za „jediný podnik“ (prepojené firmy spolu); pre cestnú nákladnú dopravu platia osobitné pravidlá.</p>
+  </div>
+</div>
+<%- include('../partials/footer') %>
