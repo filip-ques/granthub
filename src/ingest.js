@@ -33,10 +33,53 @@ const OBJECTIVE_CATEGORY = [
   { re: /podnik|MSP|konkurencieschopn/i, cat: 'Rozvoj podnikania' },
 ];
 
-async function fetchJson(path) {
-  const res = await fetch(`${API}${path}`, { headers: { accept: 'application/json' } });
-  if (!res.ok) throw new Error(`ITMS API ${path} -> ${res.status}`);
-  return res.json();
+async function fetchJson(path, attempts = 4) {
+  for (let i = 0; i < attempts; i++) {
+    const res = await fetch(`${API}${path}`, { headers: { accept: 'application/json' } });
+    if (res.ok) return res.json();
+    if ((res.status === 503 || res.status === 429) && i < attempts - 1) {
+      await new Promise((r) => setTimeout(r, 15000 * (i + 1)));
+      continue;
+    }
+    throw new Error(`ITMS API ${path} -> ${res.status}`);
+  }
+}
+
+// Overenie funkčnosti externých odkazov (per-beh cache). Mŕtve odkazy z
+// dokumentácie výziev (ministerstvá stránky rušia) sa do DB vôbec neuložia.
+// Známe presunuté stránky — prepis na funkčné ekvivalenty
+const URL_REWRITES = [
+  [/^https?:\/\/(www\.)?eurofondy\.gov\.sk\/vyzvy\/vyzvy-program-slovensko\/?$/, 'https://eurofondy.gov.sk/vyzvy/'],
+];
+
+function rewriteUrl(url) {
+  for (const [re, target] of URL_REWRITES) {
+    if (re.test(url)) return target;
+  }
+  return url;
+}
+
+function linkValidator() {
+  const cache = new Map();
+  return async (url) => {
+    if (!/^https?:\/\//.test(url)) return false;
+    // známy mŕtvy vzor: verejný deep-link na itms2014.sk neexistuje
+    if (/itms2014\.sk\/vyzva\?id=/.test(url)) return false;
+    if (cache.has(url)) return cache.get(url);
+    let ok = false;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, {
+        redirect: 'follow', signal: controller.signal,
+        headers: { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) GrantHub/1.0' },
+      });
+      clearTimeout(timer);
+      ok = res.ok;
+    } catch { ok = false; }
+    cache.set(url, ok);
+    return ok;
+  };
 }
 
 // Jednoduchá per-beh cache pre číselníky a subjekty
@@ -70,6 +113,7 @@ async function runIngest() {
   const all = await fetchJson('/v2/vyzvy/vyhlasene?limit=100000');
   const open = all.filter((v) => isOpen(v, now));
   const cached = cachedFetcher();
+  const linkOk = linkValidator();
 
   let inserted = 0;
   let updated = 0;
@@ -110,10 +154,14 @@ async function runIngest() {
     }
     const fund = fondNazvy.length ? [...new Set(fondNazvy)].join(', ') : null;
 
-    // Oficiálne odkazy a kontakty
-    const links = (d.doplnujuceInfo || [])
+    // Oficiálne odkazy a kontakty — len overené, funkčné
+    const rawLinks = (d.doplnujuceInfo || [])
       .filter((l) => l && l.url)
-      .map((l) => ({ nazov: l.nazov || 'Odkaz', url: l.url }));
+      .map((l) => ({ nazov: l.nazov || 'Odkaz', url: rewriteUrl(l.url.trim()) }));
+    const links = [];
+    for (const l of rawLinks) {
+      if (await linkOk(l.url)) links.push(l);
+    }
     const contacts = (d.kontaktneOsoby || []).map((k) => ({
       meno: k.menoUplne || [k.meno, k.priezvisko].filter(Boolean).join(' '),
       email: k.email || null,
