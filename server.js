@@ -63,10 +63,11 @@ function rateLimit(max, windowMs) {
     next();
   };
 }
+// Firemné siete zdieľajú jednu IP (NAT) — limity sú len ochrana proti zneužitiu, nie proti bežnému používaniu
 app.use(['/prihlasenie', '/registracia'], (req, res, next) =>
-  req.method === 'POST' ? rateLimit(5, 15 * 60 * 1000)(req, res, next) : next());
+  req.method === 'POST' ? rateLimit(30, 15 * 60 * 1000)(req, res, next) : next());
 app.use(['/grantovy-radar', '/objednavka', '/kontakt'], (req, res, next) =>
-  req.method === 'POST' ? rateLimit(10, 15 * 60 * 1000)(req, res, next) : next());
+  req.method === 'POST' ? rateLimit(30, 15 * 60 * 1000)(req, res, next) : next());
 
 app.use(express.urlencoded({ extended: true, limit: '50kb', parameterLimit: 100 }));
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1d' }));
