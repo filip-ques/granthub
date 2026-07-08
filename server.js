@@ -147,7 +147,7 @@ app.get('/', async (req, res) => {
        ORDER BY publication_date DESC NULLS LAST LIMIT 4`),
     pool.query(`SELECT count(*)::int AS tcount FROM tenders WHERE deadline IS NULL OR deadline >= now()`),
   ]);
-  res.render('index', { title: null, vyzvy, openCount: count, tendre, tenderCount: tcount });
+  res.render('index', { title: null, vyzvy, openCount: count, tendre, tenderCount: tcount, metaDescription: `Grantové výzvy, dotácie a verejné zákazky na jednom mieste. ${count} otvorených výziev a ${Number(tcount).toLocaleString('sk-SK')} tendrov, databáza zadarmo, e-mailový radar aj de minimis kalkulačka pre firmy.` });
 });
 
 // ---------- Katalóg výziev ----------
@@ -787,6 +787,30 @@ app.post('/cron/radar', cronAuth, async (req, res, next) => {
     console.log('[cron] radar:', JSON.stringify(stats));
     res.json(stats);
   } catch (e) { next(e); }
+});
+
+// ---------- SEO: robots + sitemap ----------
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send('User-agent: *\nAllow: /\nSitemap: https://granthub.sk/sitemap.xml\n');
+});
+
+app.get('/sitemap.xml', async (req, res) => {
+  const staticPaths = ['/', '/vyzvy', '/tendre', '/cennik', '/cpv', '/grantovy-radar',
+    '/sluzby', '/ako-fungujeme', '/faq', '/kontakt', '/registracia', '/ochrana-osobnych-udajov',
+    '/pre-podnikatelov', '/pre-mesta-a-obce', '/pre-skoly', '/pre-mimovladne-organizacie', '/pre-jednotlivcov'];
+  const [{ rows: vyzvy }, { rows: tendre }] = await Promise.all([
+    pool.query("SELECT slug FROM vyzvy WHERE status='otvorena' ORDER BY created_at DESC LIMIT 2000"),
+    pool.query("SELECT id FROM tenders WHERE deadline IS NULL OR deadline >= now() ORDER BY publication_date DESC LIMIT 2000"),
+  ]);
+  const urls = [
+    ...staticPaths.map((p) => ({ loc: `https://granthub.sk${p}`, pri: p === '/' ? '1.0' : '0.7' })),
+    ...vyzvy.map((v) => ({ loc: `https://granthub.sk/vyzvy/${v.slug}`, pri: '0.6' })),
+    ...tendre.map((t) => ({ loc: `https://granthub.sk/tendre/${t.id}`, pri: '0.5' })),
+  ];
+  res.type('application/xml').send(
+    '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    urls.map((u) => `<url><loc>${u.loc}</loc><priority>${u.pri}</priority></url>`).join('\n') +
+    '\n</urlset>');
 });
 
 // ---------- 404 / error ----------

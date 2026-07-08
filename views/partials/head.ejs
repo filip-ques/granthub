@@ -7,10 +7,28 @@
   <meta name="color-scheme" content="light">
   <meta name="format-detection" content="telephone=no">
   <title><%= title ? title + ' — GrantHub' : 'GrantHub — granty, dotácie a verejné zákazky na jednom mieste' %></title>
-  <meta name="description" content="GrantHub spája grantové výzvy, dotácie a verejné zákazky na jednom mieste. Kompletná databáza zadarmo, e-mailové upozornenia na nové výzvy a tendre.">
+  <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'GrantHub spája grantové výzvy, dotácie a verejné zákazky na jednom mieste. Kompletná databáza zadarmo, e-mailové upozornenia na nové výzvy aj tendre a de minimis kalkulačka pre firmy.' %>">
+  <link rel="canonical" href="https://granthub.sk<%= typeof path !== 'undefined' && path !== '/' ? path : '' %>">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GrantHub">
+  <meta property="og:locale" content="sk_SK">
+  <meta property="og:title" content="<%= title ? title + ' — GrantHub' : 'GrantHub — granty, dotácie a verejné zákazky na jednom mieste' %>">
+  <meta property="og:description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Grantové výzvy, dotácie a verejné zákazky na jednom mieste. Databáza zadarmo, radar aj de minimis kalkulačka.' %>">
+  <meta property="og:url" content="https://granthub.sk<%= typeof path !== 'undefined' && path !== '/' ? path : '' %>">
+  <meta name="twitter:card" content="summary">
   <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/gm.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebSite","name":"GrantHub","url":"https://granthub.sk/","inLanguage":"sk-SK",
+   "potentialAction":{"@type":"SearchAction","target":"https://granthub.sk/vyzvy?q={q}","query-input":"required name=q"}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Organization","name":"Ayerf s. r. o.","alternateName":"GrantHub",
+   "url":"https://granthub.sk/","email":"info@granthub.sk",
+   "address":{"@type":"PostalAddress","streetAddress":"Ľubovnianska 12","postalCode":"851 07","addressLocality":"Bratislava","addressCountry":"SK"}}
+  </script>
 </head>
 <body>
   <a href="#main" class="skip">Preskočiť na hlavný obsah</a>

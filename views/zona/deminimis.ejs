@@ -12,10 +12,6 @@
         <strong>Načítavame vašu pomoc z registra IS SEMP…</strong> pre IČO <span class="mono"><%= ico %></span>.
         Obnovte stránku o pár sekúnd — dáta sa dopĺňajú na pozadí, aby web ostal rýchly.
       </div>
-    <% } else if (!ico) { %>
-      <div class="alert alert-info" role="alert">
-        Zadajte IČO svojej firmy v <a href="/ucet">profile účtu</a> a automaticky vám sem načítame čerpanie de minimis z registra — bez hľadania.
-      </div>
     <% } %>
 
     <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.3rem">
@@ -37,26 +33,8 @@
       </div>
     <% } %>
 
-    <form method="post" action="/ucet/deminimis" class="panel">
-      <h3 style="margin-top:0">Pridať pomoc ručne</h3>
-      <p class="small muted">Pre pomoc, ktorá ešte nie je v registri (napr. čerstvo priznaná). Register sa dopĺňa automaticky.</p>
-      <div class="field-row">
-        <div class="field"><label for="dm-p">Poskytovateľ *</label><input id="dm-p" name="provider" required placeholder="napr. SIEA, MH SR, banka (záruka)"></div>
-        <div class="field"><label for="dm-s">Kód schémy</label><input id="dm-s" name="scheme_code" placeholder="napr. DM-6/2024"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label for="dm-a">Suma pomoci (€) *</label><input id="dm-a" name="amount_eur" type="number" step="0.01" min="0.01" required></div>
-        <div class="field"><label for="dm-d">Dátum poskytnutia *</label><input id="dm-d" name="granted_at" type="date" required></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label for="dm-i">IČO príjemcu</label><input id="dm-i" name="ico" inputmode="numeric" placeholder="vaša firma alebo prepojená"></div>
-        <div class="field"><label for="dm-n">Poznámka</label><input id="dm-n" name="note" placeholder="napr. inovačná poukážka"></div>
-      </div>
-      <button class="btn btn-primary btn-sm" type="submit">Pridať</button>
-    </form>
-
     <% if (!aids.length) { %>
-      <div class="empty"><h3>Zatiaľ žiadne záznamy</h3><p>Pridajte prijatú pomoc — sumy nájdete v zmluvách o poskytnutí pomoci alebo v centrálnom registri IS SEMP (semp.kti2dc.sk).</p></div>
+      <div class="empty"><h3>Žiadne záznamy pre toto IČO</h3><p><% if (ico) { %>V centrálnom registri IS SEMP zatiaľ pre IČO <span class="mono"><%= ico %></span> neevidujeme žiadnu minimálnu pomoc. Register aktualizujeme raz týždenne.<% } else { %>Zadajte IČO svojej firmy v <a href="/ucet">profile</a> a automaticky sem načítame vaše čerpanie z registra.<% } %></p></div>
     <% } else { %>
       <table class="t t--cards">
         <thead><tr><th>Dátum</th><th>Poskytovateľ</th><th>Schéma / nariadenie</th><th>IČO</th><th>Suma</th><th>Zdroj</th><th>V okne</th><th data-label=""></th></tr></thead>
