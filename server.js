@@ -435,6 +435,25 @@ app.post('/ucet/deminimis', auth.requireLogin, async (req, res) => {
   res.redirect('/ucet/deminimis?ok=1');
 });
 
+app.post('/ucet/deminimis/import', auth.requireLogin, rateLimit(5, 15 * 60 * 1000), async (req, res, next) => {
+  try {
+    const ico = String(req.body.ico || '').replace(/\D/g, '').slice(0, 12);
+    if (ico.length < 6) return res.redirect('/ucet/deminimis');
+    const { importForUser } = require('./src/semp');
+    const r = await importForUser(req.session.userId, ico);
+    res.redirect(`/ucet/deminimis?ok=1&semp=${r.approved}`);
+  } catch (e) { next(e); }
+});
+
+app.post('/cron/semp', cronAuth, async (req, res, next) => {
+  try {
+    const { runSempRefresh } = require('./src/semp');
+    const stats = await runSempRefresh(req.query.force === '1');
+    console.log('[cron] semp:', JSON.stringify(stats));
+    res.json(stats);
+  } catch (e) { next(e); }
+});
+
 app.post('/ucet/deminimis/:id/zmazat', auth.requireLogin, async (req, res) => {
   await pool.query('DELETE FROM deminimis_aids WHERE id = $1 AND user_id = $2',
     [Number(req.params.id) || 0, req.session.userId]);
@@ -787,6 +806,8 @@ function startInternalCron() {
     catch (e) { console.error('[cron] ingest zlyhal:', e.message); }
     try { console.log('[cron] scrape:', JSON.stringify(await runScrapers())); }
     catch (e) { console.error('[cron] scrape zlyhal:', e.message); }
+    try { console.log('[cron] semp:', JSON.stringify(await require('./src/semp').runSempRefresh())); }
+    catch (e) { console.error('[cron] semp zlyhal:', e.message); }
     try { console.log('[cron] tendre:', JSON.stringify(await runTenderIngest())); }
     catch (e) { console.error('[cron] tendre zlyhal:', e.message); }
     try { console.log('[cron] radar:', JSON.stringify(await runRadar())); }

@@ -17,6 +17,15 @@
       <div class="alert alert-error" role="alert"><strong>Pozor:</strong> blížite sa k stropu de minimis. Pomoc nad limit sa vracia aj s úrokmi — pred podaním žiadosti si overte presný stav.</div>
     <% } %>
 
+    <form method="post" action="/ucet/deminimis/import" class="panel" style="border-left:4px solid var(--blue)">
+      <h3 style="margin-top:0">Načítať z centrálneho registra (IS SEMP)</h3>
+      <p class="small muted">Stiahne schválenú minimálnu pomoc pre zadané IČO priamo z verejného registra. Automaticky sa obnovuje každé 3 týždne.</p>
+      <div class="field-row">
+        <div class="field"><label for="si-ico">IČO *</label><input id="si-ico" name="ico" inputmode="numeric" required value="<%= user.ico || '' %>"></div>
+        <div class="field" style="display:flex;align-items:flex-end"><button class="btn btn-primary" type="submit">Načítať z registra</button></div>
+      </div>
+    </form>
+
     <form method="post" action="/ucet/deminimis" class="panel">
       <h3 style="margin-top:0">Pridať prijatú pomoc</h3>
       <div class="field-row">

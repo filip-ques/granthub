@@ -196,6 +196,8 @@ async function init() {
   await pool.query(`ALTER TABLE saved_tendre ADD COLUMN IF NOT EXISTS stage TEXT NOT NULL DEFAULT 'watch'`);
   await pool.query(`ALTER TABLE saved_tendre ADD COLUMN IF NOT EXISTS note TEXT`);
   await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tender_id INTEGER REFERENCES tenders(id) ON DELETE SET NULL`);
+  await pool.query(`ALTER TABLE deminimis_aids ADD COLUMN IF NOT EXISTS ext_id TEXT`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS ux_deminimis_ext ON deminimis_aids (user_id, ext_id) WHERE ext_id IS NOT NULL`);
   await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS announced DATE`);
 }
 

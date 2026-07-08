@@ -42,6 +42,6 @@ export default {
         headers: { authorization: `Bearer ${env.CRON_SECRET}` },
       }));
     // ingest najprv, potom radar — nové výzvy odídu odberateľom v tom istom behu
-    ctx.waitUntil((async () => { await call('/cron/ingest'); await call('/cron/tendre'); await call('/cron/radar'); })());
+    ctx.waitUntil((async () => { await call('/cron/ingest'); await call('/cron/tendre'); await call('/cron/semp'); await call('/cron/radar'); })());
   },
 };
