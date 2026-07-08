@@ -112,6 +112,28 @@ router.post('/prihlasenie', async (req, res) => {
 router.get('/auth/overit', async (req, res) => {
   const token = String(req.query.token || '');
   const next = String(req.query.next || '');
+  // Token sa NEspotrebúva pri GET — e-mailové bezpečnostné skenery (Safe Links,
+  // Mimecast…) odkaz automaticky otvoria a jednorazový token by tým znehodnotili.
+  // Overíme len platnosť a zobrazíme potvrdzovacie tlačidlo (skenery nerobia POST).
+  const { rows } = await pool.query(
+    `SELECT email FROM login_tokens WHERE token = $1 AND used_at IS NULL AND expires_at > now()`,
+    [token]
+  );
+  if (!rows.length) {
+    return res.status(400).render('chyba', {
+      title: 'Neplatný odkaz',
+      heading: 'Prihlasovací odkaz je neplatný alebo expirovaný',
+      message: 'Odkaz platí 15 minút a dá sa použiť len raz. Požiadajte o nový.',
+      backLink: '/prihlasenie',
+      backLabel: 'Späť na prihlásenie',
+    });
+  }
+  res.render('overit', { title: 'Potvrďte prihlásenie', token, next, email: rows[0].email });
+});
+
+router.post('/auth/overit', async (req, res) => {
+  const token = String(req.body.token || '');
+  const next = String(req.body.next || '');
   const { rows } = await pool.query(
     `UPDATE login_tokens SET used_at = now()
      WHERE token = $1 AND used_at IS NULL AND expires_at > now()

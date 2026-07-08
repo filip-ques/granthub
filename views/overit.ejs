@@ -1,0 +1,17 @@
+<%- include('partials/head') %>
+<%- include('partials/header') %>
+<div class="container">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1 style="font-size:1.6rem">Potvrďte prihlásenie</h1>
+      <p class="muted">Ste jeden klik od prihlásenia ako <strong><%= email %></strong>.</p>
+      <form method="post" action="/auth/overit">
+        <input type="hidden" name="token" value="<%= token %>">
+        <input type="hidden" name="next" value="<%= next %>">
+        <button type="submit" class="btn btn-primary btn-block">Prihlásiť sa</button>
+      </form>
+      <p class="small muted mt2 mb0">Ak ste o prihlásenie nežiadali, túto stránku zatvorte.</p>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>
