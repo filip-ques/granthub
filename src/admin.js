@@ -147,6 +147,35 @@ router.post('/admin/objednavky/:id', async (req, res) => {
   res.redirect('/admin/objednavky');
 });
 
+router.get('/admin/pouzivatelia', async (req, res) => {
+  const { rows: users } = await pool.query(
+    `SELECT u.*,
+       (SELECT count(*)::int FROM saved_vyzvy s WHERE s.user_id = u.id) AS ulozene_vyzvy,
+       (SELECT count(*)::int FROM saved_tendre s WHERE s.user_id = u.id) AS ulozene_tendre,
+       (SELECT count(*)::int FROM orders o WHERE o.user_id = u.id) AS objednavky,
+       (SELECT count(*)::int FROM tender_searches t WHERE t.user_id = u.id) AS straznici,
+       (SELECT confirmed FROM radar_subscriptions r WHERE r.email = u.email) AS radar,
+       (SELECT max(created_at) FROM activity_events e WHERE e.user_id = u.id) AS posledna_aktivita
+     FROM users u ORDER BY u.created_at DESC LIMIT 500`);
+  res.render('admin/pouzivatelia', { title: 'Admin — používatelia', users });
+});
+
+router.get('/admin/aktivita', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const params = [];
+  let where = '';
+  if (q) { params.push(`%${q}%`); where = `WHERE (e.path ILIKE $1 OR e.ip ILIKE $1 OR u.email ILIKE $1)`; }
+  const { rows: events } = await pool.query(
+    `SELECT e.*, u.email FROM activity_events e LEFT JOIN users u ON u.id = e.user_id
+     ${where} ORDER BY e.created_at DESC LIMIT 200`, params);
+  const { rows: [stats] } = await pool.query(
+    `SELECT count(*)::int AS spolu,
+       count(*) FILTER (WHERE created_at > now() - interval '24 hours')::int AS za_24h,
+       count(DISTINCT ip) FILTER (WHERE created_at > now() - interval '24 hours')::int AS ip_24h
+     FROM activity_events`);
+  res.render('admin/aktivita', { title: 'Admin — aktivita', events, stats, q });
+});
+
 router.get('/admin/odbery', async (req, res) => {
   const { rows: subs } = await pool.query(
     `SELECT * FROM radar_subscriptions ORDER BY created_at DESC LIMIT 500`);

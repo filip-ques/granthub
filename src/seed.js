@@ -254,7 +254,8 @@ const VYZVY = [
 
 async function seed() {
   await init();
-  for (const v of VYZVY) {
+  // Bez overeného oficiálneho odkazu výzvu nezakladáme — žiadne nepodložené položky
+  for (const v of VYZVY.filter((x) => x.source_url)) {
     await pool.query(
       `INSERT INTO vyzvy (slug, title, provider, program, category, applicants, regions,
                           amount_min, amount_max, allocation, deadline, deadline_note,

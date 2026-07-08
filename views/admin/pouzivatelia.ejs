@@ -1,0 +1,26 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('partials/menu', { active: 'pouzivatelia' }) %>
+  <div>
+    <h1 style="font-size:1.7rem">Používatelia (<%= users.length %>)</h1>
+    <table class="t t--cards">
+      <thead><tr><th>E-mail</th><th>Firma</th><th>Registrácia</th><th>Aktivita</th><th>Radar</th><th>Uložené</th><th>Strážcovia</th><th>Objednávky</th></tr></thead>
+      <tbody>
+        <% for (const u of users) { %>
+          <tr>
+            <td data-label="E-mail"><strong><%= u.email %></strong><% if (u.name) { %><br><span class="small muted"><%= u.name %></span><% } %></td>
+            <td data-label="Firma" class="small"><%= u.company || '—' %><% if (u.ico) { %> (<%= u.ico %>)<% } %></td>
+            <td data-label="Registrácia" class="small"><%= fmtDate(u.created_at) %></td>
+            <td data-label="Aktivita" class="small"><%= u.posledna_aktivita ? new Date(u.posledna_aktivita).toLocaleString('sk-SK') : '—' %></td>
+            <td data-label="Radar"><span class="badge-stage <%= u.radar === true ? 's-won' : u.radar === false ? 's-preparing' : 's-lost' %>"><%= u.radar === true ? 'áno' : u.radar === false ? 'nepotvrdený' : 'nie' %></span></td>
+            <td data-label="Uložené" class="small"><%= u.ulozene_vyzvy %> výziev / <%= u.ulozene_tendre %> tendrov</td>
+            <td data-label="Strážcovia" class="small"><%= u.straznici %></td>
+            <td data-label="Objednávky" class="small"><%= u.objednavky %></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/footer') %>

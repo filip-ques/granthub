@@ -86,6 +86,20 @@ async function init() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    CREATE TABLE IF NOT EXISTS activity_events (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      method      TEXT NOT NULL,
+      path        TEXT NOT NULL,
+      status      INTEGER NOT NULL DEFAULT 0,
+      ip          TEXT NOT NULL DEFAULT '',
+      user_agent  TEXT NOT NULL DEFAULT '',
+      duration_ms INTEGER NOT NULL DEFAULT 0,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS ix_activity_time ON activity_events (created_at DESC);
+    CREATE INDEX IF NOT EXISTS ix_activity_user ON activity_events (user_id, created_at DESC);
+
     CREATE TABLE IF NOT EXISTS job_state (
       key        TEXT PRIMARY KEY,
       value      TEXT,

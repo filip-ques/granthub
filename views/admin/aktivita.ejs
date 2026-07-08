@@ -1,0 +1,33 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('partials/menu', { active: 'aktivita' }) %>
+  <div>
+    <div class="panel-head">
+      <h1 style="font-size:1.7rem;margin:0">Aktivita na platforme</h1>
+      <span class="small muted"><%= stats.za_24h.toLocaleString('sk-SK') %> požiadaviek / <%= stats.ip_24h %> unikátnych IP za 24 h · spolu <%= stats.spolu.toLocaleString('sk-SK') %></span>
+    </div>
+    <form method="get" action="/admin/aktivita" class="admin-search" style="margin-bottom:1rem">
+      <input type="search" name="q" value="<%= q %>" placeholder="filtrovať podľa cesty, IP alebo e-mailu">
+      <button class="btn btn-ghost btn-sm" type="submit">Filtrovať</button>
+    </form>
+    <div class="table-scroll">
+      <table class="t">
+        <thead><tr><th>Čas</th><th>Kto</th><th>Požiadavka</th><th>Stav</th><th>IP</th><th>ms</th></tr></thead>
+        <tbody>
+          <% for (const e of events) { %>
+            <tr>
+              <td class="small nowrap"><%= new Date(e.created_at).toLocaleString('sk-SK') %></td>
+              <td class="small"><%= e.email || 'anonym' %></td>
+              <td class="small mono"><%= e.method %> <%= e.path %></td>
+              <td><span class="badge-stage <%= e.status < 400 ? 's-won' : e.status < 500 ? 's-preparing' : 's-lost' %>"><%= e.status %></span></td>
+              <td class="small mono"><%= e.ip %></td>
+              <td class="small"><%= e.duration_ms %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

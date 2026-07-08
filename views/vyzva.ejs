@@ -53,25 +53,36 @@
         </tbody>
       </table>
 
-      <% const links = vyzva.links || []; %>
-      <% const apiLink = vyzva.source === 'itms' ? `https://opendata.itms2014.sk/v2/vyzvy/vyhlasene/${vyzva.slug.replace('itms-','')}` : null; %>
       <h2>Oficiálna stránka a dokumenty</h2>
-      <ul>
-        <% for (const l of links) { %>
-          <li><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.nazov %></a> <span class="small muted">(stránka vyhlasovateľa)</span></li>
-        <% } %>
-        <% if (!links.length && vyzva.source_url && vyzva.source !== 'itms') { %>
-          <li><a href="<%= vyzva.source_url %>" target="_blank" rel="noopener">Oficiálna stránka vyhlasovateľa / programu</a></li>
-        <% } %>
-        <% if (apiLink) { %>
-          <li><a href="<%= apiLink %>" target="_blank" rel="noopener">Záznam výzvy v ITMS open data</a> <span class="small muted">(strojový zdroj údajov, JSON)</span></li>
-        <% } %>
-        <% if (!links.length && !apiLink && !vyzva.source_url) { %>
-          <li><a href="https://www.google.com/search?q=<%= encodeURIComponent('\"' + vyzva.title + '\" výzva') %>" target="_blank" rel="noopener">Vyhľadať oficiálnu stránku výzvy</a> <span class="small muted">(vyhľadávanie podľa presného názvu)</span></li>
-        <% } %>
-      </ul>
+      <% if (!user) { %>
+        <div class="callout">
+          <p class="mb0"><strong>Oficiálne odkazy, dokumentácia a kontakty sú dostupné po prihlásení.</strong><br>
+          <span class="small muted">Registrácia je zadarmo a trvá menej ako minútu — stačí e-mail.</span></p>
+          <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap">
+            <a class="btn btn-primary btn-sm" href="/registracia?next=/vyzvy/<%= vyzva.slug %>">Registrácia zadarmo</a>
+            <a class="btn btn-ghost btn-sm" href="/prihlasenie?next=/vyzvy/<%= vyzva.slug %>">Prihlásiť sa</a>
+          </div>
+        </div>
+      <% } else { %>
+        <% const links = vyzva.links || []; %>
+        <% const apiLink = vyzva.source === 'itms' ? `https://opendata.itms2014.sk/v2/vyzvy/vyhlasene/${vyzva.slug.replace('itms-','')}` : null; %>
+        <ul>
+          <% for (const l of links) { %>
+            <li><a href="<%= l.url %>" target="_blank" rel="noopener"><%= l.nazov %></a> <span class="small muted">(stránka vyhlasovateľa)</span></li>
+          <% } %>
+          <% if (vyzva.source_url && vyzva.source !== 'itms') { %>
+            <li><a href="<%= vyzva.source_url %>" target="_blank" rel="noopener">Oficiálna stránka vyhlasovateľa / programu</a></li>
+          <% } %>
+          <% if (apiLink) { %>
+            <li><a href="<%= apiLink %>" target="_blank" rel="noopener">Záznam výzvy v ITMS open data</a> <span class="small muted">(strojový zdroj údajov, JSON)</span></li>
+          <% } %>
+          <% if (!links.length && !apiLink && !vyzva.source_url) { %>
+            <li class="muted">Oficiálny odkaz zatiaľ nemáme overený — pozrite stránku vyhlasovateľa: <%= vyzva.provider || 'uvedený v parametroch výzvy' %>.</li>
+          <% } %>
+        </ul>
+      <% } %>
 
-      <% const contacts = vyzva.contacts || []; %>
+      <% const contacts = user ? (vyzva.contacts || []) : []; %>
       <% if (contacts.length) { %>
         <h2>Kontaktné osoby vyhlasovateľa</h2>
         <table class="t">

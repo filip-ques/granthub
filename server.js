@@ -21,8 +21,54 @@ const PROD = process.env.NODE_ENV === 'production';
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
 
-app.use(express.urlencoded({ extended: true }));
+// --- Bezpečnostné hlavičky ---
+app.use((req, res, next) => {
+  res.set({
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  });
+  if (PROD) res.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+  next();
+});
+
+// --- CSRF ochrana: POSTy len z vlastného originu (dopĺňa sameSite=lax cookie) ---
+app.use((req, res, next) => {
+  if (req.method === 'POST' && !req.path.startsWith('/cron/')) {
+    const origin = req.get('origin') || '';
+    const host = req.get('host') || '';
+    if (origin && new URL(origin).host !== host) {
+      return res.status(403).send('Cross-origin request blocked');
+    }
+  }
+  next();
+});
+
+// --- Rate limit citlivých POST endpointov (in-memory, per IP) ---
+const rateBuckets = new Map();
+function rateLimit(max, windowMs) {
+  return (req, res, next) => {
+    const key = `${req.path}:${req.ip}`;
+    const now = Date.now();
+    const bucket = rateBuckets.get(key) || [];
+    const fresh = bucket.filter((t) => now - t < windowMs);
+    if (fresh.length >= max) return res.status(429).send('Priveľa požiadaviek, skúste o chvíľu.');
+    fresh.push(now);
+    rateBuckets.set(key, fresh);
+    if (rateBuckets.size > 10000) rateBuckets.clear(); // poistka proti rastu pamäte
+    next();
+  };
+}
+app.use(['/prihlasenie', '/registracia'], (req, res, next) =>
+  req.method === 'POST' ? rateLimit(5, 15 * 60 * 1000)(req, res, next) : next());
+app.use(['/grantovy-radar', '/objednavka', '/kontakt'], (req, res, next) =>
+  req.method === 'POST' ? rateLimit(10, 15 * 60 * 1000)(req, res, next) : next());
+
+app.use(express.urlencoded({ extended: true, limit: '50kb', parameterLimit: 100 }));
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1d' }));
 
 app.use(
@@ -48,6 +94,22 @@ app.use((req, res, next) => {
   next();
 });
 app.use((req, res, next) => { res.locals.isAdmin = admin.isAdmin(res.locals.user); next(); });
+
+// --- Audit log: každá požiadavka (bez statiky) do activity_events ---
+app.use((req, res, next) => {
+  if (/^\/(css|js|img|idsk|assets|favicon)/.test(req.path)) return next();
+  const t0 = Date.now();
+  res.on('finish', () => {
+    pool.query(
+      `INSERT INTO activity_events (user_id, method, path, status, ip, user_agent, duration_ms)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [req.session?.userId || null, req.method, req.path.slice(0, 300), res.statusCode,
+       String(req.ip || '').slice(0, 60), String(req.get('user-agent') || '').slice(0, 300),
+       Date.now() - t0]
+    ).catch(() => {});
+  });
+  next();
+});
 app.use(auth.router);
 app.use(admin.router);
 

@@ -48,14 +48,25 @@
       <% } %>
 
       <h2>Oficiálne zdroje</h2>
-      <ul>
-        <% if (tender.source_url) { %>
-          <li><a href="<%= tender.source_url %>" target="_blank" rel="noopener">Oznámenie v európskom vestníku TED</a></li>
-        <% } %>
-        <% if (tender.documents_url) { %>
-          <li><a href="<%= tender.documents_url %>" target="_blank" rel="noopener">Oznámenie v PDF</a></li>
-        <% } %>
-      </ul>
+      <% if (!user) { %>
+        <div class="callout">
+          <p class="mb0"><strong>Odkazy na oficiálne oznámenie a dokumenty sú dostupné po prihlásení.</strong><br>
+          <span class="small muted">Registrácia je zadarmo — stačí e-mail.</span></p>
+          <div style="margin-top:.8rem;display:flex;gap:.6rem;flex-wrap:wrap">
+            <a class="btn btn-primary btn-sm" href="/registracia?next=/tendre/<%= tender.id %>">Registrácia zadarmo</a>
+            <a class="btn btn-ghost btn-sm" href="/prihlasenie?next=/tendre/<%= tender.id %>">Prihlásiť sa</a>
+          </div>
+        </div>
+      <% } else { %>
+        <ul>
+          <% if (tender.source_url) { %>
+            <li><a href="<%= tender.source_url %>" target="_blank" rel="noopener">Oznámenie v európskom vestníku TED</a></li>
+          <% } %>
+          <% if (tender.documents_url) { %>
+            <li><a href="<%= tender.documents_url %>" target="_blank" rel="noopener">Oznámenie v PDF</a></li>
+          <% } %>
+        </ul>
+      <% } %>
 
       <% if (user) { %>
         <form method="post" action="/tendre/<%= tender.id %>/ulozit" class="mt2">
