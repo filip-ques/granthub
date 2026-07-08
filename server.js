@@ -338,6 +338,30 @@ app.get('/ucet/produkty/:id/zhody', auth.requireLogin, async (req, res, next) =>
   res.render('zona/zhody', { title: `Zhody — ${product.name}`, product, matches: parts.length ? matches : [] });
 });
 
+// ---------- Zdroje dát (po prihlásení) ----------
+const SOURCE_INFO = [
+  { key: 'itms', name: 'ITMS / Program Slovensko', desc: 'Eurofondy — oficiálne open data API (opendata.itms2014.sk)', url: 'https://opendata.itms2014.sk' },
+  { key: 'ted', name: 'TED — verejné zákazky', desc: 'Európsky vestník verejného obstarávania (oficiálne API)', url: 'https://ted.europa.eu' },
+  { key: 'planobnovy', name: 'Plán obnovy (ISPO)', desc: 'Verejné API systému ISPO', url: 'https://ispo.planobnovy.sk' },
+  { key: 'envirofond', name: 'Environmentálny fond', desc: 'Aktuálne výzvy a špecifikácie vrátane Modernizačného fondu', url: 'https://envirofond.sk' },
+  { key: 'euportal', name: 'EÚ Funding & Tenders', desc: 'Horizon Europe, Erasmus+, LIFE, Digital Europe a ďalšie EÚ programy', url: 'https://ec.europa.eu/info/funding-tenders/opportunities/portal/' },
+  { key: 'fpu', name: 'Fond na podporu umenia', desc: 'Výzvy FPU s podprogramami', url: 'https://www.fpu.sk' },
+  { key: 'fnps', name: 'Fond na podporu športu', desc: 'Športová infraštruktúra a významné súťaže', url: 'https://www.fnps.sk' },
+  { key: 'kultminor', name: 'Kultminor', desc: 'Fond na podporu kultúry národnostných menšín', url: 'https://www.kultminor.sk' },
+  { key: 'avf', name: 'Audiovizuálny fond', desc: 'Výzvy AVF', url: 'https://www.avf.sk' },
+  { key: 'manual', name: 'Ručne overené výzvy', desc: 'Kurátorsky pridané výzvy (nadácie, akcelerátory, národné projekty)', url: null },
+];
+
+app.get('/ucet/zdroje', auth.requireLogin, async (req, res) => {
+  const [{ rows: counts }, { rows: tcount }, { rows: jobs }] = await Promise.all([
+    pool.query(`SELECT source, count(*) FILTER (WHERE status='otvorena') AS otvorene, count(*) AS spolu, max(created_at) AS posledna FROM vyzvy GROUP BY source`),
+    pool.query(`SELECT count(*) FILTER (WHERE deadline IS NULL OR deadline >= now()) AS otvorene, count(*) AS spolu, max(created_at) AS posledna FROM tenders`),
+    pool.query(`SELECT key, value, updated_at FROM job_state ORDER BY key`),
+  ]);
+  const countMap = Object.fromEntries(counts.map((c) => [c.source, c]));
+  res.render('zona/zdroje', { title: 'Zdroje dát', SOURCE_INFO, countMap, tenderStats: tcount[0], jobs });
+});
+
 // ---------- Cenník ----------
 app.get('/cennik', (req, res) => res.render('cennik', { title: 'Cenník' }));
 

@@ -1,0 +1,43 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="container zone" style="grid-template-columns:250px 1fr">
+  <%- include('menu', { active: 'zdroje' }) %>
+
+  <div>
+    <h1 style="font-size:1.7rem">Zdroje dát</h1>
+    <p class="muted">Odkiaľ GrantHub čerpá výzvy a zákazky. Všetky zdroje sa aktualizujú automaticky každých 6 hodín; ukladáme len fakty s odkazom na oficiálny zdroj.</p>
+
+    <table class="t t--cards">
+      <thead><tr><th>Zdroj</th><th>Čo pokrýva</th><th>Otvorené</th><th>Spolu</th></tr></thead>
+      <tbody>
+        <% for (const s of SOURCE_INFO) { const c = s.key === 'ted' ? null : countMap[s.key]; %>
+          <tr>
+            <td data-label="Zdroj"><strong><%= s.name %></strong><% if (s.url) { %><br><a class="small" href="<%= s.url %>" target="_blank" rel="noopener"><%= s.url.replace('https://','') %></a><% } %></td>
+            <td data-label="Čo pokrýva" class="small"><%= s.desc %></td>
+            <% if (s.key === 'ted') { %>
+              <td data-label="Otvorené"><%= Number(tenderStats.otvorene).toLocaleString('sk-SK') %></td>
+              <td data-label="Spolu"><%= Number(tenderStats.spolu).toLocaleString('sk-SK') %></td>
+            <% } else { %>
+              <td data-label="Otvorené"><%= c ? Number(c.otvorene).toLocaleString('sk-SK') : 0 %></td>
+              <td data-label="Spolu"><%= c ? Number(c.spolu).toLocaleString('sk-SK') : 0 %></td>
+            <% } %>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <div class="panel" style="margin-top:1.5rem">
+      <h3>Posledné aktualizácie</h3>
+      <ul class="small" style="margin:0;padding-left:1.2rem">
+        <% for (const j of jobs) { %>
+          <li><span class="mono"><%= j.key %></span> — <%= new Date(j.updated_at).toLocaleString('sk-SK') %></li>
+        <% } %>
+      </ul>
+    </div>
+
+    <p class="small muted" style="margin-top:1rem">Pripravujeme: centrálny portál Dotácie štátu (dotaciestatu.sk — API zatiaľ vyžaduje prihlásenie), Nórske granty (nové obdobie 2021 – 2028 sa len rozbieha) a dotačné schémy ministerstiev.</p>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

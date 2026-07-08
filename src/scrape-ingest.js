@@ -8,6 +8,10 @@ const SCRAPERS = [
   { source: 'fpu', run: () => require('./scrapers/fpu').scrape() },
   { source: 'envirofond', run: () => require('./scrapers/envirofond').scrape() },
   { source: 'planobnovy', run: () => require('./scrapers/planobnovy').scrape() },
+  { source: 'euportal', run: () => require('./scrapers/euportal').scrape() },
+  { source: 'fnps', run: () => require('./scrapers/fnps').scrape() },
+  { source: 'kultminor', run: () => require('./scrapers/kultminor').scrape() },
+  { source: 'avf', run: () => require('./scrapers/avf').scrape() },
 ];
 
 async function runScrapers() {
