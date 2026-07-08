@@ -10,6 +10,7 @@ const { runIngest } = require('./src/ingest');
 const { runRadar, unsubToken } = require('./src/radarjob');
 const admin = require('./src/admin');
 const { runTenderIngest } = require('./src/tender-ingest');
+const { runScrapers } = require('./src/scrape-ingest');
 const tcat = require('./src/tender-catalog');
 const { CATEGORIES, APPLICANTS, REGIONS, SEGMENTS, SERVICES } = require('./src/data');
 
@@ -608,8 +609,9 @@ function cronAuth(req, res, next) {
 app.post('/cron/ingest', cronAuth, async (req, res, next) => {
   try {
     const stats = await runIngest();
-    console.log('[cron] ingest:', JSON.stringify(stats));
-    res.json(stats);
+    const scraped = await runScrapers();
+    console.log('[cron] ingest:', JSON.stringify({ itms: stats, ...scraped }));
+    res.json({ itms: stats, ...scraped });
   } catch (e) { next(e); }
 });
 
@@ -656,6 +658,8 @@ function startInternalCron() {
   const tick = async () => {
     try { console.log('[cron] ingest:', JSON.stringify(await runIngest())); }
     catch (e) { console.error('[cron] ingest zlyhal:', e.message); }
+    try { console.log('[cron] scrape:', JSON.stringify(await runScrapers())); }
+    catch (e) { console.error('[cron] scrape zlyhal:', e.message); }
     try { console.log('[cron] tendre:', JSON.stringify(await runTenderIngest())); }
     catch (e) { console.error('[cron] tendre zlyhal:', e.message); }
     try { console.log('[cron] radar:', JSON.stringify(await runRadar())); }
