@@ -7,6 +7,16 @@
     <p class="muted">Pomoc malého rozsahu podľa nariadenia (EÚ) 2023/2831: limit <strong>300 000 €</strong> pre jediný podnik za ľubovoľné 3 kĺzavé roky. Evidujte každú prijatú minimálnu pomoc (dotácie, vouchery, zvýhodnené úvery) vrátane prepojených firiem.</p>
 
     <% if (savedMsg) { %><div class="alert alert-success" role="alert"><strong>Uložené.</strong></div><% } %>
+    <% if (refreshing) { %>
+      <div class="alert alert-info" role="alert">
+        <strong>Načítavame vašu pomoc z registra IS SEMP…</strong> pre IČO <span class="mono"><%= ico %></span>.
+        Obnovte stránku o pár sekúnd — dáta sa dopĺňajú na pozadí, aby web ostal rýchly.
+      </div>
+    <% } else if (!ico) { %>
+      <div class="alert alert-info" role="alert">
+        Zadajte IČO svojej firmy v <a href="/ucet">profile účtu</a> a automaticky vám sem načítame čerpanie de minimis z registra — bez hľadania.
+      </div>
+    <% } %>
 
     <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.3rem">
       <div class="kpi"><div class="num"><%= drawn.toLocaleString('sk-SK', {maximumFractionDigits: 0}) %> €</div><div class="lbl">čerpané v 3-ročnom okne (od <%= fmtDate(cutoff) %>)</div></div>

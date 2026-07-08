@@ -58,7 +58,7 @@
       <div class="panel-head">
         <div>
           <h1 style="font-size:1.7rem;margin-bottom:.2rem">Grantové výzvy</h1>
-          <p class="muted mb0">Nájdených <strong><%= vyzvy.length %></strong> výziev — všetky údaje zadarmo</p>
+          <p class="muted mb0">Nájdených <strong><%= total.toLocaleString('sk-SK') %></strong> výziev — všetky údaje zadarmo</p>
         </div>
       </div>
 
@@ -75,6 +75,15 @@
           <%- include('partials/register-cta', { ctaTitle: 'Nové výzvy rovno do e-mailu', ctaText: 'Zaregistrujte sa zdarma a vyberte si oblasti — o žiadnom grante už neprídete.' }) %>
         <% } %>
       <% }) %>
+
+      <% if (pages > 1) { %>
+        <nav class="pager" aria-label="Stránkovanie">
+          <% const mkUrl = (p) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(filters)) if (v) u.set(k, v); u.set('strana', p); return '/vyzvy?' + u.toString(); }; %>
+          <% if (page > 1) { %><a href="<%= mkUrl(page - 1) %>">‹ Predchádzajúca</a><% } %>
+          <span class="cur">Strana <%= page %> / <%= pages %></span>
+          <% if (page < pages) { %><a href="<%= mkUrl(page + 1) %>">Ďalšia ›</a><% } %>
+        </nav>
+      <% } %>
     </div>
   </div>
 </div>

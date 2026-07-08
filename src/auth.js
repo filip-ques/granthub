@@ -76,6 +76,13 @@ router.post('/prihlasenie', async (req, res) => {
     const { INDUSTRY_LABELS } = require('./tender-catalog');
     const cats = [].concat(req.body.kategorie || []).filter((c) => CATEGORIES.includes(c));
     const inds = [].concat(req.body.odvetvia || []).filter((k) => INDUSTRY_LABELS[k]);
+    const ico = String(req.body.ico || '').replace(/\D/g, '').slice(0, 12);
+    if (ico.length >= 6) {
+      await pool.query(
+        `INSERT INTO users (email, ico) VALUES ($1, $2)
+         ON CONFLICT (email) DO UPDATE SET ico = COALESCE(NULLIF(users.ico,''), EXCLUDED.ico)`,
+        [email, ico]);
+    }
     if (cats.length || inds.length) {
       await pool.query(
         `INSERT INTO radar_subscriptions (email, categories, tender_industries, confirmed)

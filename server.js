@@ -171,11 +171,14 @@ app.get('/vyzvy', async (req, res) => {
   if (ziadatel) add(`applicants ILIKE ?`, `%${ziadatel}%`);
   if (kraj) add(`(regions ILIKE ? OR regions ILIKE '%Celé Slovensko%')`, `%${kraj}%`);
 
-  let sql = `SELECT * FROM vyzvy`;
-  if (conds.length) sql += ` WHERE ` + conds.join(' AND ');
-  sql += ` ORDER BY deadline ASC NULLS LAST`;
+  const where = conds.length ? ` WHERE ` + conds.join(' AND ') : '';
+  const page = Math.max(1, Number(req.query.strana) || 1);
+  const PER_PAGE = 24;
 
-  const { rows: vyzvy } = await pool.query(sql, params);
+  const [{ rows: vyzvy }, { rows: [{ count }] }] = await Promise.all([
+    pool.query(`SELECT * FROM vyzvy${where} ORDER BY deadline ASC NULLS LAST LIMIT ${PER_PAGE} OFFSET ${(page - 1) * PER_PAGE}`, params),
+    pool.query(`SELECT count(*)::int AS count FROM vyzvy${where}`, params),
+  ]);
 
   let savedIds = new Set();
   if (res.locals.user) {
@@ -184,7 +187,7 @@ app.get('/vyzvy', async (req, res) => {
   }
   res.render('vyzvy', {
     title: 'Grantové výzvy',
-    vyzvy, savedIds,
+    vyzvy, savedIds, total: count, page, pages: Math.max(1, Math.ceil(count / PER_PAGE)),
     filters: { q, kategoria, ziadatel, kraj, stav },
   });
 });
@@ -405,6 +408,19 @@ const DM_LIMIT = 300000;        // nariadenie (EÚ) 2023/2831, jediný podnik / 
 const DM_LIMIT_DOPRAVA = 100000; // cestná nákladná doprava (do 31.12.2023, po novom tiež 300k okrem výnimiek)
 
 app.get('/ucet/deminimis', auth.requireLogin, async (req, res) => {
+  const u = res.locals.user;
+  // Auto-načítanie z registra na pozadí: firma používateľa, keď má IČO a dáta chýbajú/sú staré (>7 dní).
+  // Nikdy neblokuje render — stránka vždy ukáže uložené dáta okamžite.
+  let refreshing = false;
+  if (u && u.ico && u.ico.length >= 6) {
+    const stale = !u.semp_refreshed_at || (Date.now() - new Date(u.semp_refreshed_at).getTime()) > 7 * 86400000;
+    if (stale) {
+      refreshing = true;
+      pool.query('UPDATE users SET semp_refreshed_at = now() WHERE id = $1', [u.id]).catch(() => {});
+      require('./src/semp').importForUser(u.id, u.ico)
+        .catch((e) => console.error('[semp auto]', e.message));
+    }
+  }
   const { rows: aids } = await pool.query(
     'SELECT * FROM deminimis_aids WHERE user_id = $1 ORDER BY granted_at DESC', [req.session.userId]);
   // kĺzavé 3-ročné okno ku dnešku (nariadenie 2023/2831: 3 roky spätne od poskytnutia)
@@ -415,7 +431,8 @@ app.get('/ucet/deminimis', auth.requireLogin, async (req, res) => {
     title: 'De minimis kalkulačka',
     aids, inWindow, drawn,
     remaining: Math.max(0, DM_LIMIT - drawn),
-    limit: DM_LIMIT, cutoff,
+    limit: DM_LIMIT, cutoff, refreshing,
+    ico: u && u.ico ? u.ico : '',
     savedMsg: req.query.ok === '1',
   });
 });
@@ -712,11 +729,17 @@ app.get('/ucet', auth.requireLogin, async (req, res) => {
 });
 
 app.post('/ucet', auth.requireLogin, async (req, res) => {
+  const ico = String(req.body.ico || '').replace(/\D/g, '').slice(0, 12);
   await pool.query(
     'UPDATE users SET name = $1, company = $2, ico = $3 WHERE id = $4',
     [String(req.body.name || '').trim(), String(req.body.company || '').trim(),
-     String(req.body.ico || '').trim(), req.session.userId]
+     ico, req.session.userId]
   );
+  // nové/zmenené IČO → načítaj de minimis z registra na pozadí
+  if (ico.length >= 6 && ico !== (res.locals.user && res.locals.user.ico)) {
+    pool.query('UPDATE users SET semp_refreshed_at = now() WHERE id = $1', [req.session.userId]).catch(() => {});
+    require('./src/semp').importForUser(req.session.userId, ico).catch((e) => console.error('[semp profil]', e.message));
+  }
   res.redirect('/ucet?ulozene=1');
 });
 
