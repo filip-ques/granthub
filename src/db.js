@@ -248,6 +248,8 @@ async function init() {
   await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS ai_title TEXT`);
   await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS ai_teaser TEXT`);
   await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS ai_generated_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS ai_details JSONB`);
+  await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS ai_details_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE radar_subscriptions ADD COLUMN IF NOT EXISTS confirmed BOOLEAN NOT NULL DEFAULT false`);
   await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS code TEXT`);
   await pool.query(`ALTER TABLE radar_subscriptions ADD COLUMN IF NOT EXISTS tender_industries TEXT`);

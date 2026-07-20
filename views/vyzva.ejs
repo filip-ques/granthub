@@ -19,18 +19,41 @@
         <% } else if (vyzva.deadline_note) { %><span class="tag"><%= vyzva.deadline_note %></span><% } %>
       </div>
       <h1><%= vyzva.title %></h1>
-      <p class="lead" style="font-size:1.1rem"><%= vyzva.summary %></p>
+      <% const ad = vyzva.ai_details && Object.keys(vyzva.ai_details).length ? vyzva.ai_details : null; %>
+      <p class="lead" style="font-size:1.1rem"><%= (ad && ad.summary) || vyzva.summary %></p>
 
-      <% if (vyzva.details) { %>
-        <h2>O výzve</h2>
-        <p><%= vyzva.details %></p>
-      <% } %>
-
-      <% if (vyzva.objectives) { %>
-        <h2>Konkrétne ciele výzvy</h2>
-        <ul>
-          <% for (const c of vyzva.objectives.split('\n')) { %><li><%= c %></li><% } %>
-        </ul>
+      <%
+        // pomocník: text s "|" oddelenými bodmi vykreslí ako zoznam, inak ako odsek
+        function aiBlock(title, val) {
+          if (!val) return '';
+          const items = String(val).split('|').map(s => s.trim()).filter(Boolean);
+          let h = `<h2>${title}</h2>`;
+          if (items.length > 1) {
+            h += '<ul>' + items.map(i => `<li>${i.replace(/</g,'&lt;')}</li>`).join('') + '</ul>';
+          } else {
+            h += `<p>${String(val).replace(/</g,'&lt;')}</p>`;
+          }
+          return h;
+        }
+      %>
+      <% if (ad) { %>
+        <%- aiBlock('Podporované oblasti a ciele', ad.oblasti) %>
+        <%- aiBlock('Oprávnení žiadatelia', ad.ziadatelia) %>
+        <%- aiBlock('Oprávnené aktivity a náklady', ad.aktivity) %>
+        <%- aiBlock('Hodnotenie a výber', ad.hodnotenie) %>
+        <% if (ad.poznamka) { %><div class="callout" style="margin:1.2rem 0"><strong>Dôležité:</strong> <%= ad.poznamka %></div><% } %>
+        <p class="small muted">Rozpis pripravil AI asistent GrantHubu z oficiálneho textu výzvy. Záväzné znenie nájdete v dokumentácii vyhlasovateľa.</p>
+      <% } else { %>
+        <% if (vyzva.details) { %>
+          <h2>O výzve</h2>
+          <p><%= vyzva.details %></p>
+        <% } %>
+        <% if (vyzva.objectives) { %>
+          <h2>Konkrétne ciele výzvy</h2>
+          <ul>
+            <% for (const c of vyzva.objectives.split('\n')) { %><li><%= c %></li><% } %>
+          </ul>
+        <% } %>
       <% } %>
 
       <h2>Parametre výzvy</h2>
