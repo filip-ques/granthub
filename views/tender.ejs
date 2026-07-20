@@ -19,7 +19,18 @@
         <% } else if (tdl != null) { %><span class="tag">uzavretá</span><% } %>
       </div>
       <h1 style="font-size:1.9rem"><%= tender.title %></h1>
-      <% if (tender.description) { %>
+      <% if (tender.ai_summary) { %>
+        <p class="lead" style="font-size:1.05rem"><%= tender.ai_summary %></p>
+        <% const tpts = (tender.ai_points || '').split('|').map(s=>s.trim()).filter(Boolean); %>
+        <% if (tpts.length) { %>
+          <h2>Kľúčové body</h2>
+          <ul><% for (const p of tpts) { %><li><%= p %></li><% } %></ul>
+        <% } %>
+        <% if (tender.description) { %>
+          <details class="acc" style="margin:1rem 0"><summary>Pôvodný opis z oznámenia</summary><p class="mb0" style="white-space:pre-wrap"><%= tender.description %></p></details>
+        <% } %>
+        <p class="small muted">Zhrnutie pripravil AI asistent GrantHubu z textu oznámenia. Záväzné je znenie v európskom vestníku TED.</p>
+      <% } else if (tender.description) { %>
         <p class="lead" style="font-size:1.05rem"><%= tender.description %></p>
       <% } %>
 

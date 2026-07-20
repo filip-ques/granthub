@@ -57,6 +57,20 @@ async function fetchSourceText(url) {
   } catch { return ''; }
 }
 
+// Plán obnovy — detail z verejného ISPO API (oprávnení žiadatelia, cieľ, podmienky)
+async function fetchIspoDetail(vyzvaId) {
+  const res = await fetch(`https://public-api.planobnovy.sk/public/vyzva/${vyzvaId}`,
+    { headers: { accept: 'application/json', 'user-agent': UA } });
+  if (!res.ok) return '';
+  const d = await res.json();
+  const parts = [
+    d.nazov, d.ciel, d.opravneniZiadatelia, d.uzavretieText,
+    d.mieraSpolufinancovania ? `Miera spolufinancovania: ${d.mieraSpolufinancovania}` : '',
+    d.oblast, d.komponent, d.opatrenie,
+  ].filter(Boolean).join('\n\n');
+  return htmlToText(parts);
+}
+
 // Zdrojový text pre výzvu podľa jej pôvodu
 async function fullTextFor(v) {
   if (v.source === 'euportal' && v.source_url) {
@@ -66,7 +80,16 @@ async function fullTextFor(v) {
       try { const t = await fetchEuTopic(m[1]); if (t && t.length > 200) return t; } catch { /* fallback nižšie */ }
     }
   }
-  return fetchSourceText(v.source_url);
+  if (v.source === 'planobnovy' && v.source_url) {
+    const m = v.source_url.match(/vyzvy\/(\d+)/);
+    if (m) { try { const t = await fetchIspoDetail(m[1]); if (t && t.length > 150) return t; } catch { /* fallback */ } }
+  }
+  // stránka vyhlasovateľa (envirofond, avf, kultminor, fpu, manual)
+  const web = await fetchSourceText(v.source_url);
+  if (web && web.length > 400) return web;
+  // posledná záchrana: reálne oficiálne fakty, ktoré už máme (ITMS ciele a pod.)
+  const own = [v.objectives, v.summary, v.details].filter(Boolean).join('\n\n').trim();
+  return own.length > 200 ? own : (web || '');
 }
 
 const SYSTEM = `Si odborný editor slovenského grantového portálu. Z DODANÉHO OFICIÁLNEHO TEXTU výzvy vytvor štruktúrovaný, vecný prehľad v spisovnej slovenčine, VLASTNÝMI SLOVAMI (nie doslovný preklad ani kópia). Zhrň a preformuluj obsah.

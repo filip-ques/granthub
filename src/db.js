@@ -253,6 +253,9 @@ async function init() {
   await pool.query(`ALTER TABLE radar_subscriptions ADD COLUMN IF NOT EXISTS confirmed BOOLEAN NOT NULL DEFAULT false`);
   await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS code TEXT`);
   await pool.query(`ALTER TABLE radar_subscriptions ADD COLUMN IF NOT EXISTS tender_industries TEXT`);
+  await pool.query(`ALTER TABLE tenders ADD COLUMN IF NOT EXISTS ai_summary TEXT`);
+  await pool.query(`ALTER TABLE tenders ADD COLUMN IF NOT EXISTS ai_points TEXT`);
+  await pool.query(`ALTER TABLE tenders ADD COLUMN IF NOT EXISTS ai_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE saved_tendre ADD COLUMN IF NOT EXISTS stage TEXT NOT NULL DEFAULT 'watch'`);
   await pool.query(`ALTER TABLE saved_tendre ADD COLUMN IF NOT EXISTS note TEXT`);
   await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tender_id INTEGER REFERENCES tenders(id) ON DELETE SET NULL`);

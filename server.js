@@ -14,6 +14,7 @@ const { runScrapers } = require('./src/scrape-ingest');
 const { runCompanyRefresh } = require('./src/company');
 const { runAiDescriptions } = require('./src/ai-descriptions');
 const { runAiDetails } = require('./src/ai-details');
+const { runAiTenders } = require('./src/ai-tenders');
 const tcat = require('./src/tender-catalog');
 const { CATEGORIES, APPLICANTS, REGIONS, SEGMENTS, SERVICES } = require('./src/data');
 
@@ -821,8 +822,9 @@ app.post('/cron/ingest', cronAuth, async (req, res, next) => {
 app.post('/cron/tendre', cronAuth, async (req, res, next) => {
   try {
     const stats = await runTenderIngest();
-    console.log('[cron] tendre:', JSON.stringify(stats));
-    res.json(stats);
+    const ai = await runAiTenders().catch((e) => ({ error: e.message }));
+    console.log('[cron] tendre:', JSON.stringify({ ...stats, ai }));
+    res.json({ ...stats, ai });
   } catch (e) { next(e); }
 });
 
@@ -897,6 +899,8 @@ function startInternalCron() {
     catch (e) { console.error('[cron] semp zlyhal:', e.message); }
     try { console.log('[cron] tendre:', JSON.stringify(await runTenderIngest())); }
     catch (e) { console.error('[cron] tendre zlyhal:', e.message); }
+    try { console.log('[cron] ai-tendre:', JSON.stringify(await runAiTenders())); }
+    catch (e) { console.error('[cron] ai-tendre zlyhal:', e.message); }
     try { console.log('[cron] radar:', JSON.stringify(await runRadar())); }
     catch (e) { console.error('[cron] radar zlyhal:', e.message); }
   };
