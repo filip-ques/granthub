@@ -21,6 +21,7 @@ export class GranthubContainer extends Container {
       ORDERS_EMAIL: env.ORDERS_EMAIL || '',
       CRON_SECRET: env.CRON_SECRET,
       ADMIN_EMAILS: env.ADMIN_EMAILS || 'filip@ques.sk',
+      ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
       BASE_URL: env.BASE_URL,
       NODE_ENV: 'production',
     };

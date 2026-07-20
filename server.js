@@ -12,6 +12,7 @@ const admin = require('./src/admin');
 const { runTenderIngest } = require('./src/tender-ingest');
 const { runScrapers } = require('./src/scrape-ingest');
 const { runCompanyRefresh } = require('./src/company');
+const { runAiDescriptions } = require('./src/ai-descriptions');
 const tcat = require('./src/tender-catalog');
 const { CATEGORIES, APPLICANTS, REGIONS, SEGMENTS, SERVICES } = require('./src/data');
 
@@ -809,8 +810,9 @@ app.post('/cron/ingest', cronAuth, async (req, res, next) => {
     const stats = await runIngest();
     const scraped = await runScrapers();
     const company = await runCompanyRefresh().catch((e) => ({ error: e.message }));
-    console.log('[cron] ingest:', JSON.stringify({ itms: stats, ...scraped, company }));
-    res.json({ itms: stats, ...scraped, company });
+    const ai = await runAiDescriptions().catch((e) => ({ error: e.message }));
+    console.log('[cron] ingest:', JSON.stringify({ itms: stats, ...scraped, company, ai }));
+    res.json({ itms: stats, ...scraped, company, ai });
   } catch (e) { next(e); }
 });
 
@@ -885,6 +887,8 @@ function startInternalCron() {
     catch (e) { console.error('[cron] scrape zlyhal:', e.message); }
     try { console.log('[cron] company:', JSON.stringify(await runCompanyRefresh())); }
     catch (e) { console.error('[cron] company zlyhal:', e.message); }
+    try { console.log('[cron] ai:', JSON.stringify(await runAiDescriptions())); }
+    catch (e) { console.error('[cron] ai zlyhal:', e.message); }
     try { console.log('[cron] semp:', JSON.stringify(await require('./src/semp-bulk').runSempBulk())); }
     catch (e) { console.error('[cron] semp zlyhal:', e.message); }
     try { console.log('[cron] tendre:', JSON.stringify(await runTenderIngest())); }

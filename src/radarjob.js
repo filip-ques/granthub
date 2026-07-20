@@ -84,8 +84,8 @@ async function runRadar() {
               : (v.deadline_note || 'bez pevnej uzávierky');
             bodyHtml += mail.itemCard({
               url: `${baseUrl}/vyzvy/${v.slug}`,
-              title: v.title,
-              subtitle: v.provider || v.category,
+              title: v.ai_title || v.title,
+              subtitle: v.ai_teaser || v.provider || v.category,
               facts: `${mail.strong(amount)} &nbsp;·&nbsp; ${dl}`,
             });
           }
