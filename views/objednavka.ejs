@@ -55,6 +55,11 @@
           <textarea id="o-message" name="message" rows="5"><%= values.message || '' %></textarea>
           <div class="hint">nepovinné — čím viac napíšete, tým presnejšie vám odpovieme</div>
         </div>
+        <p class="form-note">Uvedené ceny sú bez DPH; k cene sa účtuje DPH v zákonnej sadzbe. Konečnú cenu podľa rozsahu vám potvrdíme pred záväzným objednaním.</p>
+        <label class="consent">
+          <input type="checkbox" name="suhlas_vop" value="1" required>
+          <span>Objednávam ako podnikateľ a súhlasím so <a href="/obchodne-podmienky" target="_blank" rel="noopener">Všeobecnými obchodnými podmienkami</a> portálu GrantHub (prevádzkovaným Ayerf s. r. o.). *</span>
+        </label>
         <button type="submit" class="btn btn-primary">Odoslať objednávku</button>
       </form>
     </div>

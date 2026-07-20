@@ -602,6 +602,13 @@ app.post('/objednavka', async (req, res) => {
       error: 'Vyplňte meno a platný e-mail.',
     });
   }
+  // Odborné služby sú B2B — vyžaduje sa výslovné potvrdenie a súhlas s VOP
+  if (req.body.suhlas_vop !== '1') {
+    return res.status(400).render('objednavka', {
+      title: 'Nezáväzná objednávka', service, vyzva, tender, values,
+      error: 'Na objednanie odbornej služby potvrďte, že objednávate ako podnikateľ a súhlasíte s Všeobecnými obchodnými podmienkami.',
+    });
+  }
   await pool.query(
     `INSERT INTO orders (user_id, service, vyzva_id, tender_id, name, email, phone, company, ico, message)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
@@ -664,6 +671,12 @@ app.post('/grantovy-radar', async (req, res) => {
     return res.status(400).render('radar', {
       title: 'Radar', ok: false, sent: false, devLink: null,
       error: 'Zadajte platnú e-mailovú adresu.', values: { email, kategorie: cats, odvetvia: tinds },
+    });
+  }
+  if (req.body.suhlas_radar !== '1') {
+    return res.status(400).render('radar', {
+      title: 'Radar', ok: false, sent: false, devLink: null,
+      error: 'Zaškrtnite, prosím, súhlas so zasielaním grantového radaru.', values: { email, kategorie: cats, odvetvia: tinds },
     });
   }
 
@@ -744,6 +757,8 @@ app.post('/kontakt', async (req, res) => {
   res.redirect('/kontakt?ok=1');
 });
 app.get('/ochrana-osobnych-udajov', (req, res) => res.render('gdpr', { title: 'Ochrana osobných údajov' }));
+app.get('/obchodne-podmienky', (req, res) => res.render('vop', { title: 'Všeobecné obchodné podmienky' }));
+app.get('/vop', (req, res) => res.redirect(301, '/obchodne-podmienky'));
 
 // ---------- Účet ----------
 app.get('/ucet', auth.requireLogin, async (req, res) => {
@@ -843,7 +858,7 @@ app.get('/robots.txt', (req, res) => {
 
 app.get('/sitemap.xml', async (req, res) => {
   const staticPaths = ['/', '/vyzvy', '/tendre', '/cennik', '/cpv', '/grantovy-radar',
-    '/sluzby', '/ako-fungujeme', '/faq', '/kontakt', '/registracia', '/ochrana-osobnych-udajov',
+    '/sluzby', '/ako-fungujeme', '/faq', '/kontakt', '/registracia', '/ochrana-osobnych-udajov', '/obchodne-podmienky',
     '/pre-podnikatelov', '/pre-mesta-a-obce', '/pre-skoly', '/pre-mimovladne-organizacie', '/pre-jednotlivcov'];
   const [{ rows: vyzvy }, { rows: tendre }] = await Promise.all([
     pool.query("SELECT slug FROM vyzvy WHERE status='otvorena' ORDER BY created_at DESC LIMIT 2000"),

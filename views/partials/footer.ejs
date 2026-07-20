@@ -44,12 +44,14 @@
       </div>
       <div>
         <h3>Právne</h3>
+        <a href="/obchodne-podmienky">Všeobecné obchodné podmienky</a>
         <a href="/ochrana-osobnych-udajov">Ochrana osobných údajov</a>
+        <a href="#" data-cookie-settings>Nastavenia cookies</a>
       </div>
     </div>
     <div class="foot-bottom">
       <span>© <%= new Date().getFullYear() %> GrantHub — prevádzkuje Ayerf s. r. o., Ľubovnianska 12, 851 07 Bratislava-Petržalka, IČO: 50991175, DIČ: 2120570034, IČ DPH: SK2120570034 (§4, od 1. 11. 2025).</span>
-      <span>Zdroje údajov: ITMS open data · TED (Tenders Electronic Daily)</span>
+      <span>Zdroje údajov: ITMS open data · IS SEMP · TED (Tenders Electronic Daily)</span>
     </div>
     <div class="foot-licence">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2 3 6v6c0 5 3.8 8.4 9 10 5.2-1.6 9-5 9-10V6l-9-4Z" stroke="#b9c6da" stroke-width="1.5"/></svg>
@@ -57,6 +59,16 @@
     </div>
   </div>
 </footer>
+
+<div class="cookiebar" id="cookieBanner" hidden>
+  <div class="container cookiebar-inner">
+    <div class="cookiebar-text">
+      <strong>Používame len nevyhnutné cookies.</strong>
+      Táto stránka používa iba technické cookies potrebné na jej fungovanie a bezpečné prihlásenie. Nepoužívame reklamné ani sledovacie cookies. Viac v <a href="/ochrana-osobnych-udajov#cookies">Zásadách ochrany osobných údajov</a>.
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" data-cookie="ok">Rozumiem</button>
+  </div>
+</div>
 
 <script src="/js/app.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '1' %>"></script>
 </body>

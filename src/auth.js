@@ -69,6 +69,14 @@ router.post('/prihlasenie', async (req, res) => {
       next, register,
     });
   }
+  // Registrácia vyžaduje výslovný súhlas s VOP a Zásadami (nesmie byť predvolený)
+  if (register && req.body.suhlas_vop !== '1') {
+    return res.status(400).render('prihlasenie', {
+      title: 'Registrácia',
+      error: 'Na registráciu je potrebný súhlas s Všeobecnými obchodnými podmienkami a Zásadami ochrany osobných údajov.',
+      next, register,
+    });
+  }
 
   // Registrácia so záujmami: rovno založ radar (potvrdí sa kliknutím na magic link)
   if (register) {

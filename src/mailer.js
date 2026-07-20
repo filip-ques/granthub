@@ -32,7 +32,8 @@ const baseUrl = () => (process.env.BASE_URL || 'http://localhost:3000').replace(
 function shell({ preheader, heading, introHtml, bodyHtml = '', reason = '', unsub = '' }) {
   const base = baseUrl();
   const year = new Date().getFullYear();
-  let links = `<a href="${base}/ochrana-osobnych-udajov" style="color:${MUTED};text-decoration:underline">Ochrana osobných údajov</a>`;
+  let links = `<a href="${base}/ochrana-osobnych-udajov" style="color:${MUTED};text-decoration:underline">Ochrana osobných údajov</a>` +
+    ` &nbsp;·&nbsp; <a href="${base}/obchodne-podmienky" style="color:${MUTED};text-decoration:underline">Obchodné podmienky</a>`;
   if (unsub) {
     links += ` &nbsp;·&nbsp; <a href="${base}/grantovy-radar" style="color:${MUTED};text-decoration:underline">Nastavenia radaru</a>` +
              ` &nbsp;·&nbsp; <a href="${unsub}" style="color:${MUTED};text-decoration:underline">Odhlásiť odber</a>`;

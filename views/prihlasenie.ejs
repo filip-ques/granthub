@@ -52,6 +52,10 @@
               <% }) %>
             </div>
           </fieldset>
+          <label class="consent">
+            <input type="checkbox" name="suhlas_vop" value="1" required>
+            <span>Súhlasím so <a href="/obchodne-podmienky" target="_blank" rel="noopener">Všeobecnými obchodnými podmienkami</a> portálu GrantHub (prevádzkovaným Ayerf s. r. o.) a beriem na vedomie, že GrantHub bude spracúvať moje osobné údaje v súlade so <a href="/ochrana-osobnych-udajov" target="_blank" rel="noopener">Zásadami ochrany osobných údajov</a>. *</span>
+          </label>
         <% } %>
         <button type="submit" class="btn btn-primary btn-block"><%= register ? 'Zaregistrovať sa a dostávať relevantné ponuky' : 'Poslať prihlasovací odkaz' %></button>
       </form>
