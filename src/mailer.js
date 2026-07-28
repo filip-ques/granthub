@@ -99,6 +99,8 @@ function sectionHeading(label) {
 const para = (t) => `<p style="margin:0 0 6px;font-size:15px;line-height:1.6">${t}</p>`;
 const small = (t) => `<p style="margin:0 0 14px;font-size:13px;color:${MUTED}">${t}</p>`;
 const strong = (t) => `<strong style="color:${INK}">${t}</strong>`;
+// Escapovanie user-controlled textu pred vložením do HTML e-mailu
+const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 async function sendMail({ to, subject, text, html }) {
   if (!transporter) {
@@ -117,4 +119,4 @@ async function sendMail({ to, subject, text, html }) {
   return { sent: true };
 }
 
-module.exports = { sendMail, smtpConfigured, shell, button, itemCard, sectionHeading, para, small, strong };
+module.exports = { sendMail, smtpConfigured, shell, button, itemCard, sectionHeading, para, small, strong, esc };

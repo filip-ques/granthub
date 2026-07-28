@@ -46,7 +46,7 @@
     <tbody>
       <% if (d.rozpocet) { %><tr><th scope="row">Predpokladaná hodnota</th><td class="mono"><%= Number(d.rozpocet).toLocaleString('sk-SK') %> €</td></tr><% } %>
       <% if (d.termin_ponuky) { %><tr><th scope="row">Termín ponúk</th><td><%= new Date(d.termin_ponuky).toLocaleDateString('sk-SK') %></td></tr><% } %>
-      <tr><th scope="row">Stav</th><td><%= d.obst_stav === 'prebieha' ? 'Prebieha' : d.obst_stav === 'vyhodnotenie' ? 'Vyhodnotenie' : d.obst_stav === 'ukoncene' ? 'Ukončené' : d.obst_stav %></td></tr>
+      <tr><th scope="row">Stav</th><td><%= d.obst_stav === 'prebieha' ? 'Prebieha' : d.obst_stav === 'vyhodnotenie' ? 'Vyhodnotenie' : d.obst_stav === 'ukoncene' ? 'Ukončené' : d.obst_stav === 'zrusene' ? 'Zrušené' : d.obst_stav === 'priprava' ? 'Príprava' : d.obst_stav %></td></tr>
     </tbody>
   </table>
 
@@ -93,7 +93,7 @@
     <% } else { %>
       <div class="callout" style="margin:1rem 0">
         <p style="margin:0"><strong>Momentálne nie je otvorené žiadne kolo na predkladanie ponúk.</strong><br>
-        <% if (d.obst_stav === 'ukoncene') { %>Obstarávanie bolo ukončené.<% } else { %>Keď obstarávateľ otvorí nové kolo, dostanete e-mail s výzvou.<% } %></p>
+        <% if (d.obst_stav === 'ukoncene') { %>Obstarávanie bolo ukončené.<% } else if (d.obst_stav === 'zrusene') { %>Obstarávanie bolo zrušené obstarávateľom.<% } else { %>Keď obstarávateľ otvorí nové kolo, dostanete e-mail s výzvou.<% } %></p>
       </div>
     <% } %>
 
@@ -109,7 +109,7 @@
               <td>
                 <% if (p.stav === 'dorucena') { %><span class="tag accent">Doručená</span>
                 <% } else if (p.stav === 'ok') { %><span class="tag ok">Akceptovaná</span>
-                <% } else { %><span class="tag">Vyradená</span><% } %>
+                <% } else { %><span class="tag">Zrušená</span><% } %>
               </td>
               <td class="small muted"><%= new Date(p.created_at).toLocaleDateString('sk-SK') %></td>
             </tr>

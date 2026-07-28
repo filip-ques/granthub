@@ -30,6 +30,24 @@
 
     <% if (tab === 'prehlad') { %>
       <!-- ═══ PREHĽAD ═══ -->
+      <% const vitazDod = dodavatelia.find(dd => dd.stav === 'vybrany'); %>
+      <% if (['ukoncene','zrusene'].includes(obst.stav)) { %>
+        <div class="callout" style="margin-bottom:1.2rem">
+          <p class="mb0"><strong><%= obst.stav === 'ukoncene' ? 'Obstarávanie je ukončené.' : 'Obstarávanie bolo zrušené.' %></strong>
+          <% if (vitazDod) { %><br>Víťaz: <strong><%= vitazDod.nazov || vitazDod.email %></strong><% } %>
+          <br><span class="small muted">Stiahnite si záverečnú správu s celým priebehom — vhodná ako dokumentácia pre úrad či poskytovateľa grantu.</span></p>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.8rem">
+            <a class="btn btn-primary btn-sm" href="/ucet/obstaravania/<%= obst.id %>/report.pdf" target="_blank" rel="noopener">Záverečná správa (PDF)</a>
+            <a class="btn btn-ghost btn-sm" href="/ucet/obstaravania/<%= obst.id %>/export.zip">Kompletný export s prílohami (ZIP)</a>
+          </div>
+        </div>
+      <% } else { %>
+        <p class="small" style="margin:0 0 1rem">
+          <a href="/ucet/obstaravania/<%= obst.id %>/report.pdf" target="_blank" rel="noopener">Priebežná správa (PDF)</a>
+          <span class="muted">·</span>
+          <a href="/ucet/obstaravania/<%= obst.id %>/export.zip">Export s prílohami (ZIP)</a>
+        </p>
+      <% } %>
       <form method="post" action="/ucet/obstaravania/<%= obst.id %>" style="max-width:640px">
         <div class="field">
           <label for="o-nazov">Názov</label>
@@ -180,13 +198,13 @@
                     <td>
                       <% if (p.stav === 'dorucena') { %><span class="tag accent">Doručená</span>
                       <% } else if (p.stav === 'ok') { %><span class="tag ok">Akceptovaná</span>
-                      <% } else { %><span class="tag">Vyradená</span><% } %>
+                      <% } else { %><span class="tag">Zrušená</span><% } %>
                     </td>
                     <td>
                       <% if (kolo.stav === 'otvorene' || obst.stav === 'vyhodnotenie') { %>
-                        <form method="post" action="/ucet/obstaravania/<%= obst.id %>/ponuky/<%= p.id %>/stav" style="display:inline">
-                          <% if (p.stav !== 'ok') { %><button name="stav" value="ok" class="btn btn-ghost btn-sm" style="font-size:.7rem">OK</button><% } %>
-                          <% if (p.stav !== 'vyradena') { %><button name="stav" value="vyradena" class="btn btn-ghost btn-sm" style="font-size:.7rem">Vyradiť</button><% } %>
+                        <form method="post" action="/ucet/obstaravania/<%= obst.id %>/ponuky/<%= p.id %>/stav" style="display:inline-flex;gap:.3rem;flex-wrap:wrap">
+                          <% if (p.stav !== 'ok') { %><button name="stav" value="ok" class="btn btn-ghost btn-sm" style="font-size:.7rem">Akceptovať ponuku</button><% } %>
+                          <% if (p.stav !== 'vyradena') { %><button name="stav" value="vyradena" class="btn btn-ghost btn-sm" style="font-size:.7rem" data-confirm="Naozaj zrušiť túto ponuku? Dodávateľ dostane e-mail.">Zrušiť ponuku</button><% } %>
                         </form>
                       <% } %>
                     </td>
@@ -249,8 +267,8 @@
                   <p style="margin:0;white-space:pre-wrap"><%= sp.text %></p>
                 </div>
               <% } %>
-              <form method="post" action="/ucet/obstaravania/<%= obst.id %>/spravy/<%= d.id %>" style="display:flex;gap:.5rem;margin-top:.5rem">
-                <input name="text" type="text" placeholder="Napíšte správu…" required style="flex:1">
+              <form method="post" action="/ucet/obstaravania/<%= obst.id %>/spravy/<%= d.id %>" style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
+                <input name="text" type="text" placeholder="Napíšte správu…" required style="flex:1;min-width:0">
                 <button class="btn btn-primary btn-sm">Odoslať</button>
               </form>
             </div>

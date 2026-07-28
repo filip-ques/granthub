@@ -56,6 +56,12 @@
       if (!window.confirm(form.getAttribute('data-confirm'))) e.preventDefault();
     });
   });
+  // Per-button confirm (forms with multiple submit buttons where only one is destructive)
+  document.querySelectorAll('button[data-confirm]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      if (!window.confirm(btn.getAttribute('data-confirm'))) e.preventDefault();
+    });
+  });
 
   // Auto-hide flash messages
   document.querySelectorAll('.flash').forEach(function (f) {

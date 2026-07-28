@@ -9,6 +9,7 @@ COPY server.js ./
 COPY src ./src
 COPY views ./views
 COPY public ./public
+COPY fonts ./fonts
 
 ENV NODE_ENV=production
 ENV PORT=8080

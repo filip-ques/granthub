@@ -8,7 +8,8 @@ const { Router } = require('express');
 const crypto = require('crypto');
 const multer = require('multer');
 const { pool } = require('./db');
-const { sendMail, shell, button, para, small, strong, itemCard, sectionHeading } = require('./mailer');
+const { sendMail, shell, button, para, small, strong, itemCard, sectionHeading, esc } = require('./mailer');
+const { buildPdf, buildZip } = require('./report');
 
 const router = Router();
 const portal = Router();
@@ -29,6 +30,41 @@ const STAVY = {
 const KATEGORIE = { projekt: 'Projektová dokumentácia', vv: 'Výkaz výmer', zmluva: 'Zmluva / dodatok', ine: 'Iné' };
 
 // ─── helpers ───
+
+// Jednotný notifikačný e-mail; neblokuje flow — chybu len zaloguje.
+// intro/bodyHtml sú HTML — user-controlled hodnoty musí volajúci escapovať cez esc().
+function notify({ to, subject, heading, intro, bodyHtml = '', link, linkLabel, reason }) {
+  const cleanSubject = String(subject).replace(/[\r\n]+/g, ' ').slice(0, 200);
+  return sendMail({
+    to,
+    subject: cleanSubject,
+    text: `${heading}\n\n${String(intro).replace(/<[^>]+>/g, '')}${link ? `\n\n${link}` : ''}`,
+    html: shell({
+      preheader: esc(cleanSubject),
+      heading,
+      introHtml: para(intro),
+      bodyHtml: bodyHtml + (link ? button(link, linkLabel || 'Zobraziť') : ''),
+      reason: reason || 'Tento e-mail ste dostali ako účastník obstarávania cez portál GrantHub.',
+    }),
+  }).catch((e) => console.error('[obst-notify]', to, e.message));
+}
+
+const baseUrlOf = (req) => process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+// Jednoduchý in-memory rate limit pre portálové POSTy (token nevyžaduje prihlásenie)
+const portalBuckets = new Map();
+function portalLimit(max, windowMs) {
+  return (req, res, next) => {
+    const key = `${req.params.token}:${req.ip}`;
+    const now = Date.now();
+    const fresh = (portalBuckets.get(key) || []).filter((t) => now - t < windowMs);
+    if (fresh.length >= max) return res.status(429).send('Priveľa požiadaviek, skúste o chvíľu.');
+    fresh.push(now);
+    portalBuckets.set(key, fresh);
+    if (portalBuckets.size > 5000) portalBuckets.clear(); // poistka proti rastu pamäte
+    next();
+  };
+}
 
 // Overí, že obstarávanie patrí prihlásenému používateľovi
 async function loadOwn(req) {
@@ -145,6 +181,23 @@ router.post('/:id/podklady', upload.array('subory'), async (req, res, next) => {
       'INSERT INTO obstaravanie_podklady (obstaravanie_id, subor_id, kategoria, popis) VALUES ($1,$2,$3,$4)',
       [obst.id, rows[0].id, kategoria, popis]);
   }
+  // Ak už boli dodávatelia oslovení, upozorni ich na doplnené podklady
+  if ((req.files || []).length && obst.stav === 'prebieha') {
+    const nazvy = (req.files || []).map((f) => f.originalname).join(', ');
+    const firma = res.locals.user.company || res.locals.user.email;
+    const { rows: dods } = await pool.query(
+      `SELECT * FROM obstaravanie_dodavatelia WHERE obstaravanie_id=$1 AND stav IN ('osloveny','vybrany')`, [obst.id]);
+    for (const d of dods) {
+      notify({
+        to: d.email,
+        subject: `Doplnené podklady: ${obst.nazov}`,
+        heading: 'Obstarávateľ doplnil podklady',
+        intro: `Obstarávateľ ${strong(esc(firma))} doplnil podklady k obstarávaniu ${strong(esc(obst.nazov))}: ${esc(nazvy)}.`,
+        link: `${baseUrlOf(req)}/obstaravanie/${d.token}?tab=podklady`,
+        linkLabel: 'Zobraziť podklady',
+      });
+    }
+  }
   res.redirect(`/ucet/obstaravania/${obst.id}?tab=podklady`);
 });
 
@@ -215,11 +268,11 @@ router.post('/:id/oslovit', async (req, res, next) => {
         subject: `Výzva na predloženie ponuky: ${obst.nazov}`,
         text: `Dobrý deň,\n\nfirma ${user.company || user.email} vás pozýva predložiť cenovú ponuku na: ${obst.nazov}.\n\nPodrobnosti a odoslanie ponuky: ${link}\n\nGrantHub`,
         html: shell({
-          preheader: `Nové obstarávanie: ${obst.nazov}`,
+          preheader: `Nové obstarávanie: ${esc(obst.nazov)}`,
           heading: 'Výzva na predloženie ponuky',
-          introHtml: para(`Firma ${strong(user.company || user.email)} vás pozýva predložiť cenovú ponuku na obstarávanie:`),
+          introHtml: para(`Firma ${strong(esc(user.company || user.email))} vás pozýva predložiť cenovú ponuku na obstarávanie:`),
           bodyHtml:
-            itemCard({ url: link, title: obst.nazov, subtitle: obst.popis ? obst.popis.slice(0, 200) : '',
+            itemCard({ url: link, title: esc(obst.nazov), subtitle: obst.popis ? esc(obst.popis.slice(0, 200)) : '',
               facts: obst.termin_ponuky ? `Termín: ${new Date(obst.termin_ponuky).toLocaleDateString('sk-SK')}` : '' }) +
             button(link, 'Zobraziť podrobnosti a podať ponuku') +
             small('Tento odkaz je určený výhradne vám. Na predloženie ponuky nie je potrebná registrácia.'),
@@ -268,9 +321,9 @@ router.post('/:id/kola', async (req, res, next) => {
       subject: `Nové kolo obstarávania: ${obst.nazov} (kolo ${cislo})`,
       text: `Dobrý deň,\n\nv obstarávaní „${obst.nazov}" bolo otvorené kolo ${cislo}.\nPredložte novú ponuku: ${link}\n\nGrantHub`,
       html: shell({
-        preheader: `Kolo ${cislo}: ${obst.nazov}`,
+        preheader: `Kolo ${cislo}: ${esc(obst.nazov)}`,
         heading: `Nové kolo obstarávania (kolo ${cislo})`,
-        introHtml: para(`V obstarávaní ${strong(obst.nazov)} bolo otvorené ${strong(`${cislo}. kolo`)}.`),
+        introHtml: para(`V obstarávaní ${strong(esc(obst.nazov))} bolo otvorené ${strong(`${cislo}. kolo`)}.`),
         bodyHtml:
           (termin ? small(`Termín na predloženie ponuky: ${new Date(termin).toLocaleDateString('sk-SK')}`) : '') +
           button(link, 'Predložiť ponuku'),
@@ -285,11 +338,31 @@ router.post('/:id/kola', async (req, res, next) => {
 router.post('/:id/kola/:kid/uzavriet', async (req, res, next) => {
   const obst = await loadOwn(req);
   if (!obst) return next();
-  await pool.query(`UPDATE obstaravanie_kola SET stav='uzavrete' WHERE id=$1 AND obstaravanie_id=$2`, [req.params.kid, obst.id]);
-  // Skontroluj, či sú ešte otvorené kolá
-  const { rows } = await pool.query(`SELECT 1 FROM obstaravanie_kola WHERE obstaravanie_id=$1 AND stav='otvorene'`, [obst.id]);
-  if (!rows.length) {
-    await pool.query(`UPDATE obstaravania SET stav='vyhodnotenie', updated_at=now() WHERE id=$1`, [obst.id]);
+  const { rows: closed } = await pool.query(
+    `UPDATE obstaravanie_kola SET stav='uzavrete' WHERE id=$1 AND obstaravanie_id=$2 AND stav='otvorene' RETURNING cislo`,
+    [req.params.kid, obst.id]);
+  if (closed.length) {
+    // Ak už nie je otvorené žiadne kolo, prejdi do vyhodnotenia (len z 'prebieha' — nikdy nie z ukončeného/zrušeného)
+    const { rows } = await pool.query(`SELECT 1 FROM obstaravanie_kola WHERE obstaravanie_id=$1 AND stav='otvorene'`, [obst.id]);
+    if (!rows.length) {
+      await pool.query(`UPDATE obstaravania SET stav='vyhodnotenie', updated_at=now() WHERE id=$1 AND stav='prebieha'`, [obst.id]);
+    }
+  }
+  // Notifikuj dodávateľov, že kolo je uzavreté a prebieha vyhodnotenie
+  if (closed.length) {
+    const firma = res.locals.user.company || res.locals.user.email;
+    const { rows: dods } = await pool.query(
+      `SELECT * FROM obstaravanie_dodavatelia WHERE obstaravanie_id=$1 AND stav IN ('osloveny','vybrany')`, [obst.id]);
+    for (const d of dods) {
+      notify({
+        to: d.email,
+        subject: `Kolo ${closed[0].cislo} uzavreté: ${obst.nazov}`,
+        heading: `${closed[0].cislo}. kolo bolo uzavreté`,
+        intro: `Obstarávateľ ${strong(esc(firma))} uzavrel ${closed[0].cislo}. kolo obstarávania ${strong(esc(obst.nazov))}. Prebieha vyhodnotenie ponúk — o výsledku alebo prípadnom ďalšom kole vás budeme informovať e-mailom.`,
+        link: `${baseUrlOf(req)}/obstaravanie/${d.token}`,
+        linkLabel: 'Zobraziť moje ponuky',
+      });
+    }
   }
   res.redirect(`/ucet/obstaravania/${obst.id}?tab=ponuky`);
 });
@@ -300,9 +373,27 @@ router.post('/:id/ponuky/:pid/stav', async (req, res, next) => {
   const obst = await loadOwn(req);
   if (!obst) return next();
   const stav = ['ok', 'vyradena'].includes(req.body.stav) ? req.body.stav : 'dorucena';
-  await pool.query(
-    `UPDATE obstaravanie_ponuky SET stav=$1 WHERE id=$2 AND kolo_id IN (SELECT id FROM obstaravanie_kola WHERE obstaravanie_id=$3)`,
+  const { rows } = await pool.query(
+    `UPDATE obstaravanie_ponuky p SET stav=$1
+     FROM obstaravanie_kola k, obstaravanie_dodavatelia d
+     WHERE p.id=$2 AND k.id = p.kolo_id AND k.obstaravanie_id=$3 AND d.id = p.dodavatel_id
+       AND p.stav IS DISTINCT FROM $1
+     RETURNING p.suma, k.cislo AS kolo_cislo, d.email, d.nazov, d.token`,
     [stav, req.params.pid, obst.id]);
+  // Notifikuj dodávateľa o zmene stavu jeho ponuky
+  if (rows.length && (stav === 'ok' || stav === 'vyradena')) {
+    const p = rows[0];
+    const akceptovana = stav === 'ok';
+    notify({
+      to: p.email,
+      subject: `${akceptovana ? 'Vaša ponuka bola akceptovaná' : 'Vaša ponuka bola zrušená'}: ${obst.nazov}`,
+      heading: akceptovana ? 'Ponuka akceptovaná' : 'Ponuka zrušená',
+      intro: `Obstarávateľ ${strong(esc(res.locals.user.company || res.locals.user.email))} ${akceptovana ? 'akceptoval' : 'zrušil'} vašu ponuku${p.suma ? ` (${Number(p.suma).toLocaleString('sk-SK')} € bez DPH)` : ''} v ${p.kolo_cislo}. kole obstarávania ${strong(esc(obst.nazov))}.`,
+      bodyHtml: akceptovana ? small('Akceptovanie ponuky ešte neznamená výber víťaza — o výsledku obstarávania vás budeme informovať.') : small('V prípade otázok použite komunikáciu v dodávateľskom portáli.'),
+      link: `${baseUrlOf(req)}/obstaravanie/${p.token}`,
+      linkLabel: 'Otvoriť dodávateľský portál',
+    });
+  }
   res.redirect(`/ucet/obstaravania/${obst.id}?tab=ponuky`);
 });
 
@@ -312,11 +403,33 @@ router.post('/:id/vitaz', async (req, res, next) => {
   const obst = await loadOwn(req);
   if (!obst) return next();
   const dodId = Number(req.body.dodavatel_id);
+  // Idempotenčný guard: ukončiť možno len bežiace/vyhodnocované obstarávanie
+  // (opakovaný submit nesmie znova rozoslať e-maily ani prepísať zrušené)
+  const { rows: ch } = await pool.query(
+    `UPDATE obstaravania SET stav='ukoncene', updated_at=now()
+     WHERE id=$1 AND stav NOT IN ('ukoncene','zrusene') RETURNING id`, [obst.id]);
+  if (!ch.length) return res.redirect(`/ucet/obstaravania/${obst.id}`);
   if (dodId) {
     await pool.query(`UPDATE obstaravanie_dodavatelia SET stav='vybrany' WHERE id=$1 AND obstaravanie_id=$2`, [dodId, obst.id]);
   }
   await pool.query(`UPDATE obstaravanie_kola SET stav='uzavrete' WHERE obstaravanie_id=$1 AND stav='otvorene'`, [obst.id]);
-  await pool.query(`UPDATE obstaravania SET stav='ukoncene', updated_at=now() WHERE id=$1`, [obst.id]);
+  // Notifikuj víťaza aj neúspešných dodávateľov o výsledku
+  const firma = res.locals.user.company || res.locals.user.email;
+  const { rows: dods } = await pool.query(
+    `SELECT * FROM obstaravanie_dodavatelia WHERE obstaravanie_id=$1 AND stav IN ('osloveny','vybrany')`, [obst.id]);
+  for (const d of dods) {
+    const vitaz = d.id === dodId;
+    notify({
+      to: d.email,
+      subject: `${vitaz ? 'Vaša ponuka uspela' : 'Obstarávanie bolo ukončené'}: ${obst.nazov}`,
+      heading: vitaz ? 'Gratulujeme — vaša ponuka uspela' : 'Obstarávanie ukončené',
+      intro: vitaz
+        ? `Obstarávateľ ${strong(esc(firma))} vybral vašu ponuku ako víťaznú v obstarávaní ${strong(esc(obst.nazov))}. Obstarávateľ vás bude kontaktovať ohľadom ďalších krokov (zmluva, plnenie).`
+        : `Obstarávateľ ${strong(esc(firma))} ukončil obstarávanie ${strong(esc(obst.nazov))}. Vaša ponuka tentoraz nebola vybraná. Ďakujeme za účasť a čas venovaný príprave ponuky.`,
+      link: `${baseUrlOf(req)}/obstaravanie/${d.token}`,
+      linkLabel: 'Zobraziť detail v portáli',
+    });
+  }
   res.redirect(`/ucet/obstaravania/${obst.id}`);
 });
 
@@ -324,8 +437,24 @@ router.post('/:id/vitaz', async (req, res, next) => {
 router.post('/:id/zrusit', async (req, res, next) => {
   const obst = await loadOwn(req);
   if (!obst) return next();
+  // Idempotenčný guard — už ukončené/zrušené sa nedá zrušiť znova (žiadne duplicitné e-maily)
+  const { rows: ch } = await pool.query(
+    `UPDATE obstaravania SET stav='zrusene', updated_at=now()
+     WHERE id=$1 AND stav NOT IN ('zrusene','ukoncene') RETURNING id`, [obst.id]);
+  if (!ch.length) return res.redirect(`/ucet/obstaravania/${obst.id}`);
   await pool.query(`UPDATE obstaravanie_kola SET stav='uzavrete' WHERE obstaravanie_id=$1 AND stav='otvorene'`, [obst.id]);
-  await pool.query(`UPDATE obstaravania SET stav='zrusene', updated_at=now() WHERE id=$1`, [obst.id]);
+  // Notifikuj oslovených dodávateľov o zrušení
+  const { rows: dods } = await pool.query(
+    `SELECT * FROM obstaravanie_dodavatelia WHERE obstaravanie_id=$1 AND stav IN ('osloveny','vybrany')`, [obst.id]);
+  const firma = res.locals.user.company || res.locals.user.email;
+  for (const d of dods) {
+    notify({
+      to: d.email,
+      subject: `Obstarávanie bolo zrušené: ${obst.nazov}`,
+      heading: 'Obstarávanie zrušené',
+      intro: `Obstarávateľ ${strong(esc(firma))} zrušil obstarávanie ${strong(esc(obst.nazov))}. Predkladanie ponúk je ukončené a doručené ponuky nebudú vyhodnotené. Ďakujeme za váš záujem.`,
+    });
+  }
   res.redirect(`/ucet/obstaravania/${obst.id}`);
 });
 
@@ -334,13 +463,53 @@ router.post('/:id/zrusit', async (req, res, next) => {
 router.post('/:id/spravy/:did', async (req, res, next) => {
   const obst = await loadOwn(req);
   if (!obst) return next();
-  const text = String(req.body.text || '').trim();
+  const text = String(req.body.text || '').trim().slice(0, 4000);
   if (!text) return res.redirect(`/ucet/obstaravania/${obst.id}?tab=komunikacia`);
   // Overí, že dodávateľ patrí k tomuto obstarávaniu
   const { rows } = await pool.query('SELECT * FROM obstaravanie_dodavatelia WHERE id=$1 AND obstaravanie_id=$2', [req.params.did, obst.id]);
   if (!rows.length) return next();
   await pool.query('INSERT INTO obstaravanie_spravy (dodavatel_id, smer, text) VALUES ($1,$2,$3)', [rows[0].id, 'obstaravatel', text]);
+  // Notifikuj dodávateľa o novej správe
+  notify({
+    to: rows[0].email,
+    subject: `Nová správa k obstarávaniu: ${obst.nazov}`,
+    heading: 'Nová správa od obstarávateľa',
+    intro: `${strong(esc(res.locals.user.company || res.locals.user.email))} vám poslal správu k obstarávaniu ${strong(esc(obst.nazov))}:`,
+    bodyHtml: itemCard({ url: `${baseUrlOf(req)}/obstaravanie/${rows[0].token}?tab=komunikacia`, title: esc(text.slice(0, 200)), subtitle: '' }),
+    link: `${baseUrlOf(req)}/obstaravanie/${rows[0].token}?tab=komunikacia`,
+    linkLabel: 'Odpovedať v portáli',
+  });
   res.redirect(`/ucet/obstaravania/${obst.id}?tab=komunikacia`);
+});
+
+// ─── Záverečná správa (PDF) a kompletný export (ZIP) ───
+
+router.get('/:id/report.pdf', async (req, res, next) => {
+  const obst = await loadOwn(req);
+  if (!obst) return next();
+  res.set('Content-Type', 'application/pdf');
+  res.set('Content-Disposition', `inline; filename="zaverecna-sprava-obstaravanie-${obst.id}.pdf"`);
+  try {
+    await buildPdf(obst.id, res);
+  } catch (e) {
+    console.error('[obst-report]', obst.id, e.message);
+    if (!res.headersSent) return next(e);
+    res.end();
+  }
+});
+
+router.get('/:id/export.zip', async (req, res, next) => {
+  const obst = await loadOwn(req);
+  if (!obst) return next();
+  res.set('Content-Type', 'application/zip');
+  res.set('Content-Disposition', `attachment; filename="obstaravanie-${obst.id}-export.zip"`);
+  try {
+    await buildZip(obst.id, res);
+  } catch (e) {
+    console.error('[obst-export]', obst.id, e.message);
+    if (!res.headersSent) return next(e);
+    res.end();
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -395,7 +564,7 @@ portal.get('/:token/subor/:sid', async (req, res, next) => {
 });
 
 // Dodávateľ: podať ponuku
-portal.post('/:token/ponuka', upload.array('subory'), async (req, res, next) => {
+portal.post('/:token/ponuka', portalLimit(20, 15 * 60 * 1000), upload.array('subory'), async (req, res, next) => {
   const d = await loadByToken(req.params.token);
   if (!d) return next();
   // Nájdi otvorené kolo
@@ -404,33 +573,66 @@ portal.post('/:token/ponuka', upload.array('subory'), async (req, res, next) => 
   if (!kola.length) return res.redirect(`/obstaravanie/${req.params.token}?err=kolo_uzavrete`);
   const kolo = kola[0];
   const suma = req.body.suma ? Number(String(req.body.suma).replace(/\s/g, '').replace(',', '.')) || null : null;
-  const poznamka = String(req.body.poznamka || '').trim();
-  // UPSERT ponuky
+  const poznamka = String(req.body.poznamka || '').trim().slice(0, 4000);
+  // UPSERT ponuky — atomicky len do stále otvoreného kola (kolo sa mohlo medzitým uzavrieť)
   const { rows: ins } = await pool.query(
     `INSERT INTO obstaravanie_ponuky (kolo_id, dodavatel_id, suma, poznamka)
-     VALUES ($1, $2, $3, $4)
+     SELECT k.id, $2, $3, $4 FROM obstaravanie_kola k WHERE k.id = $1 AND k.stav = 'otvorene'
      ON CONFLICT (kolo_id, dodavatel_id)
      DO UPDATE SET suma = EXCLUDED.suma, poznamka = EXCLUDED.poznamka, created_at = now()
      RETURNING id`,
     [kolo.id, d.id, suma, poznamka]);
+  if (!ins.length) return res.redirect(`/obstaravanie/${req.params.token}?err=kolo_uzavrete`);
   const ponukaId = ins[0].id;
-  // Prílohy k ponuke
+  // Prílohy k ponuke — nové odoslanie nahrádza predchádzajúce prílohy
+  // (inak by sa pri každom prepise ponuky hromadili megabajty v DB)
+  if ((req.files || []).length) {
+    await pool.query(
+      `DELETE FROM subory WHERE id IN (SELECT subor_id FROM obstaravanie_ponuka_subory WHERE ponuka_id = $1)`, [ponukaId]);
+    await pool.query('DELETE FROM obstaravanie_ponuka_subory WHERE ponuka_id = $1', [ponukaId]);
+  }
   for (const f of (req.files || [])) {
     const { rows: sr } = await pool.query(
       'INSERT INTO subory (nazov, mime, velkost, data) VALUES ($1,$2,$3,$4) RETURNING id',
       [f.originalname, f.mimetype, f.size, f.buffer]);
     await pool.query('INSERT INTO obstaravanie_ponuka_subory (ponuka_id, subor_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [ponukaId, sr[0].id]);
   }
+  // Notifikuj obstarávateľa o novej/aktualizovanej ponuke
+  notify({
+    to: d.obst_email,
+    subject: `Nová ponuka: ${d.obst_nazov}`,
+    heading: 'Doručená nová ponuka',
+    intro: `Dodávateľ ${strong(esc(d.nazov || d.email))} predložil ponuku v ${kolo.cislo}. kole obstarávania ${strong(esc(d.obst_nazov))}.`,
+    bodyHtml: itemCard({
+      url: `${baseUrlOf(req)}/ucet/obstaravania/${d.obstaravanie_id}?tab=ponuky`,
+      title: suma != null ? `${Number(suma).toLocaleString('sk-SK')} € bez DPH` : 'Suma neuvedená',
+      subtitle: [poznamka ? esc(poznamka.slice(0, 160)) : '', (req.files || []).length ? `${(req.files || []).length} príloh` : ''].filter(Boolean).join(' · '),
+    }),
+    link: `${baseUrlOf(req)}/ucet/obstaravania/${d.obstaravanie_id}?tab=ponuky`,
+    linkLabel: 'Zobraziť ponuky',
+    reason: 'Tento e-mail ste dostali ako obstarávateľ v systéme GrantHub.',
+  });
   res.redirect(`/obstaravanie/${req.params.token}?ok=ponuka`);
 });
 
 // Dodávateľ: správa
-portal.post('/:token/sprava', async (req, res, next) => {
+portal.post('/:token/sprava', portalLimit(30, 15 * 60 * 1000), async (req, res, next) => {
   const d = await loadByToken(req.params.token);
   if (!d) return next();
-  const text = String(req.body.text || '').trim();
+  const text = String(req.body.text || '').trim().slice(0, 4000);
   if (text) {
     await pool.query('INSERT INTO obstaravanie_spravy (dodavatel_id, smer, text) VALUES ($1,$2,$3)', [d.id, 'dodavatel', text]);
+    // Notifikuj obstarávateľa o novej správe
+    notify({
+      to: d.obst_email,
+      subject: `Nová správa k obstarávaniu: ${d.obst_nazov}`,
+      heading: 'Nová správa od dodávateľa',
+      intro: `${strong(esc(d.nazov || d.email))} vám poslal správu k obstarávaniu ${strong(esc(d.obst_nazov))}:`,
+      bodyHtml: itemCard({ url: `${baseUrlOf(req)}/ucet/obstaravania/${d.obstaravanie_id}?tab=komunikacia`, title: esc(text.slice(0, 200)), subtitle: '' }),
+      link: `${baseUrlOf(req)}/ucet/obstaravania/${d.obstaravanie_id}?tab=komunikacia`,
+      linkLabel: 'Odpovedať',
+      reason: 'Tento e-mail ste dostali ako obstarávateľ v systéme GrantHub.',
+    });
   }
   res.redirect(`/obstaravanie/${req.params.token}?tab=komunikacia`);
 });
