@@ -17,19 +17,19 @@
         <a href="/ucet/obstaravania/nove" class="btn btn-primary" style="margin-top:.6rem">Vytvoriť prvé obstarávanie</a>
       </div>
     <% } else { %>
-      <table class="t">
+      <table class="t t--cards">
         <thead>
           <tr><th>Názov</th><th>Stav</th><th>Dodávatelia</th><th>Ponuky</th><th>Termín</th><th>Vytvorené</th></tr>
         </thead>
         <tbody>
           <% for (const o of items) { const st = STAVY[o.stav] || STAVY.priprava; %>
             <tr>
-              <td><a href="/ucet/obstaravania/<%= o.id %>" style="font-weight:700"><%= o.nazov %></a></td>
-              <td><span class="tag <%= st.cls %>"><%= st.label %></span></td>
-              <td class="mono"><%= o.dodavatelov %></td>
-              <td class="mono"><%= o.ponuk %></td>
-              <td><%= o.termin_ponuky ? new Date(o.termin_ponuky).toLocaleDateString('sk-SK') : '—' %></td>
-              <td class="small muted"><%= new Date(o.created_at).toLocaleDateString('sk-SK') %></td>
+              <td data-label="Názov"><a href="/ucet/obstaravania/<%= o.id %>" style="font-weight:700"><%= o.nazov %></a></td>
+              <td data-label="Stav"><span class="tag <%= st.cls %>"><%= st.label %></span></td>
+              <td data-label="Dodávatelia" class="mono"><%= o.dodavatelov %></td>
+              <td data-label="Ponuky" class="mono"><%= o.ponuk %></td>
+              <td data-label="Termín ponúk"><%= o.termin_ponuky ? new Date(o.termin_ponuky).toLocaleDateString('sk-SK') : '—' %></td>
+              <td data-label="Vytvorené" class="small muted"><%= new Date(o.created_at).toLocaleDateString('sk-SK') %></td>
             </tr>
           <% } %>
         </tbody>

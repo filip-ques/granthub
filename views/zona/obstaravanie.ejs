@@ -37,15 +37,15 @@
           <% if (vitazDod) { %><br>Víťaz: <strong><%= vitazDod.nazov || vitazDod.email %></strong><% } %>
           <br><span class="small muted">Stiahnite si záverečnú správu s celým priebehom — vhodná ako dokumentácia pre úrad či poskytovateľa grantu.</span></p>
           <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.8rem">
-            <a class="btn btn-primary btn-sm" href="/ucet/obstaravania/<%= obst.id %>/report.pdf" target="_blank" rel="noopener">Záverečná správa (PDF)</a>
-            <a class="btn btn-ghost btn-sm" href="/ucet/obstaravania/<%= obst.id %>/export.zip">Kompletný export s prílohami (ZIP)</a>
+            <a class="btn btn-primary btn-sm" href="/ucet/obstaravania/<%= obst.id %>/report.pdf" target="_blank" rel="noopener">Záverečná správa s prílohami (PDF)</a>
+            <a class="btn btn-ghost btn-sm" href="/ucet/obstaravania/<%= obst.id %>/export.zip">Export ako ZIP</a>
           </div>
         </div>
       <% } else { %>
         <p class="small" style="margin:0 0 1rem">
-          <a href="/ucet/obstaravania/<%= obst.id %>/report.pdf" target="_blank" rel="noopener">Priebežná správa (PDF)</a>
+          <a href="/ucet/obstaravania/<%= obst.id %>/report.pdf" target="_blank" rel="noopener">Priebežná správa s prílohami (PDF)</a>
           <span class="muted">·</span>
-          <a href="/ucet/obstaravania/<%= obst.id %>/export.zip">Export s prílohami (ZIP)</a>
+          <a href="/ucet/obstaravania/<%= obst.id %>/export.zip">Export ako ZIP</a>
         </p>
       <% } %>
       <form method="post" action="/ucet/obstaravania/<%= obst.id %>" style="max-width:640px">

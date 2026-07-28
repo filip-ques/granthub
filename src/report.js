@@ -4,7 +4,10 @@
 // priebeh po kolách s ponukami, výsledok a kompletná komunikácia.
 
 const path = require('path');
+const fs = require('fs');
 const PDFDocument = require('pdfkit');
+const { PDFDocument: PdfLib, rgb } = require('pdf-lib');
+const fontkit = require('@pdf-lib/fontkit');
 const archiver = require('archiver');
 const { pool } = require('./db');
 
@@ -225,6 +228,116 @@ async function buildPdf(obstId, res) {
   return d;
 }
 
+// ─── Kompletné PDF: správa + VŠETKY prílohy v jednom dokumente ───
+// PDF prílohy sa pripoja ako strany, obrázky (PNG/JPEG) sa vykreslia ako strany,
+// ostatné formáty (Word, Excel, ZIP…) sa vnoria do PDF ako embedded súbory
+// (otvoriteľné v paneli príloh PDF čítačky) a vypíšu sa na zozname.
+
+const A4 = [595.28, 841.89];
+
+async function pdfToBuffer(obstId) {
+  const { PassThrough } = require('stream');
+  const ps = new PassThrough();
+  const chunks = [];
+  ps.on('data', (c) => chunks.push(c));
+  const done = new Promise((r) => ps.on('end', r));
+  const d = await buildPdf(obstId, ps);
+  await done;
+  return { buf: Buffer.concat(chunks), d };
+}
+
+async function buildFullPdf(obstId, res) {
+  const { buf, d } = await pdfToBuffer(obstId);
+  const merged = await PdfLib.load(buf);
+  merged.registerFontkit(fontkit);
+  const font = await merged.embedFont(fs.readFileSync(FONT), { subset: true });
+  const fontBold = await merged.embedFont(fs.readFileSync(FONT_BOLD), { subset: true });
+  const blue = rgb(0, 0.27, 0.58);
+  const grey = rgb(0.44, 0.44, 0.44);
+
+  // Oddeľovacia strana pred každou prílohou
+  const divider = (kicker, title, subtitle) => {
+    const page = merged.addPage(A4);
+    page.drawRectangle({ x: 0, y: A4[1] - 6, width: A4[0], height: 6, color: blue });
+    page.drawText(kicker, { x: 50, y: 770, size: 11, font: fontBold, color: blue });
+    page.drawText(title.slice(0, 120), { x: 50, y: 738, size: 15, font: fontBold, maxWidth: 495, lineHeight: 20 });
+    if (subtitle) page.drawText(subtitle.slice(0, 200), { x: 50, y: 700, size: 9.5, font, color: grey, maxWidth: 495, lineHeight: 13 });
+  };
+
+  // Zozbieraj prílohy: podklady + prílohy ponúk (s metadátami odkiaľ sú)
+  const items = [];
+  for (const p of d.podklady) {
+    items.push({ suborId: p.subor_id, nazov: p.subor_nazov, mime: p.mime, kicker: 'Príloha — súťažný podklad', sub: KATEGORIE[p.kategoria] || p.kategoria });
+  }
+  const ponukaMeta = {};
+  d.ponuky.forEach((p) => { ponukaMeta[p.id] = p; });
+  for (const s of d.prilohy) {
+    const p = ponukaMeta[s.ponuka_id];
+    if (!p) continue;
+    items.push({ suborId: s.subor_id, nazov: s.nazov, mime: null, kicker: 'Príloha — ponuka dodávateľa', sub: `${p.dod_nazov || p.dod_email} · ${p.kolo_cislo}. kolo` });
+  }
+
+  const embedded = []; // formáty, ktoré sa nedajú vykresliť — vnoríme ich
+  for (const it of items) {
+    if (res.destroyed) return;
+    const { rows } = await pool.query('SELECT nazov, mime, data FROM subory WHERE id = $1', [it.suborId]);
+    if (!rows.length) continue;
+    const data = rows[0].data;
+    const mime = it.mime || rows[0].mime || '';
+    const lname = it.nazov.toLowerCase();
+    try {
+      if (mime.includes('pdf') || lname.endsWith('.pdf')) {
+        const src = await PdfLib.load(data, { ignoreEncryption: true });
+        const pages = await merged.copyPages(src, src.getPageIndices());
+        divider(it.kicker, it.nazov, it.sub);
+        pages.forEach((pg) => merged.addPage(pg));
+        continue;
+      }
+      if (mime.includes('png') || mime.includes('jpeg') || mime.includes('jpg') || /\.(png|jpe?g)$/.test(lname)) {
+        const img = (mime.includes('png') || lname.endsWith('.png'))
+          ? await merged.embedPng(data) : await merged.embedJpg(data);
+        divider(it.kicker, it.nazov, it.sub);
+        const page = merged.addPage(A4);
+        const maxW = A4[0] - 100;
+        const maxH = A4[1] - 120;
+        const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        page.drawImage(img, { x: (A4[0] - w) / 2, y: (A4[1] - h) / 2, width: w, height: h });
+        continue;
+      }
+      throw new Error('nerenderovateľný formát');
+    } catch {
+      // Word/Excel/ZIP alebo poškodené PDF → vnor ako súbor do PDF
+      try {
+        await merged.attach(data, safeName(it.nazov), {
+          mimeType: mime || 'application/octet-stream',
+          description: `${it.kicker}: ${it.sub}`,
+        });
+        embedded.push(it);
+      } catch (e) { console.error('[report-attach]', it.nazov, e.message); }
+    }
+  }
+
+  // Zoznam vnorených súborov (Word/Excel…), nech je jasné, že SÚ v tomto PDF
+  if (embedded.length) {
+    const page = merged.addPage(A4);
+    page.drawRectangle({ x: 0, y: A4[1] - 6, width: A4[0], height: 6, color: blue });
+    page.drawText('Vnorené prílohy (súčasť tohto PDF)', { x: 50, y: 770, size: 15, font: fontBold, color: blue });
+    page.drawText('Nasledujúce súbory nie je možné zobraziť ako strany (Word, Excel a pod.), preto sú vložené priamo do tohto PDF súboru. Otvoríte ich v paneli príloh svojej PDF čítačky (Adobe Acrobat: ikona spinky).', { x: 50, y: 735, size: 9.5, font, color: grey, maxWidth: 495, lineHeight: 13 });
+    let y = 690;
+    for (const it of embedded) {
+      page.drawText(`•  ${it.nazov.slice(0, 80)}`, { x: 50, y, size: 10.5, font: fontBold, maxWidth: 495 });
+      page.drawText(`   ${it.kicker} · ${it.sub}`.slice(0, 110), { x: 50, y: y - 14, size: 8.5, font, color: grey, maxWidth: 495 });
+      y -= 36;
+      if (y < 60) break;
+    }
+  }
+
+  const out = await merged.save();
+  res.end(Buffer.from(out));
+}
+
 // ─── ZIP export: report.pdf + podklady + prílohy ponúk ───
 
 const safeName = (s) => String(s || 'subor').replace(/[\\/:*?"<>|]/g, '_').slice(0, 120);
@@ -241,16 +354,9 @@ async function buildZip(obstId, res) {
     return done;
   };
 
-  // 1) PDF report (vygeneruj do bufferu cez PassThrough); buildPdf vracia dáta —
-  // jeden snapshot pre PDF aj obsah ZIPu (konzistentný auditný export)
-  const { PassThrough } = require('stream');
-  const pdfStream = new PassThrough();
-  const chunks = [];
-  pdfStream.on('data', (c) => chunks.push(c));
-  const pdfDone = new Promise((resolve) => pdfStream.on('end', resolve));
-  const d = await buildPdf(obstId, pdfStream);
-  await pdfDone;
-  await appended(Buffer.concat(chunks), 'zaverecna-sprava.pdf');
+  // 1) PDF report — jeden snapshot pre PDF aj obsah ZIPu (konzistentný auditný export)
+  const { buf, d } = await pdfToBuffer(obstId);
+  await appended(buf, 'zaverecna-sprava.pdf');
 
   // 2) Podklady
   for (const p of d.podklady) {
@@ -275,4 +381,4 @@ async function buildZip(obstId, res) {
   await archive.finalize();
 }
 
-module.exports = { buildPdf, buildZip, reportData };
+module.exports = { buildPdf, buildFullPdf, buildZip, reportData };

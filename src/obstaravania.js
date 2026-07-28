@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const multer = require('multer');
 const { pool } = require('./db');
 const { sendMail, shell, button, para, small, strong, itemCard, sectionHeading, esc } = require('./mailer');
-const { buildPdf, buildZip } = require('./report');
+const { buildFullPdf, buildZip } = require('./report');
 
 const router = Router();
 const portal = Router();
@@ -490,7 +490,7 @@ router.get('/:id/report.pdf', async (req, res, next) => {
   res.set('Content-Type', 'application/pdf');
   res.set('Content-Disposition', `inline; filename="zaverecna-sprava-obstaravanie-${obst.id}.pdf"`);
   try {
-    await buildPdf(obst.id, res);
+    await buildFullPdf(obst.id, res);
   } catch (e) {
     console.error('[obst-report]', obst.id, e.message);
     if (!res.headersSent) return next(e);
