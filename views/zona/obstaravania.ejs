@@ -1,0 +1,40 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone">
+  <%- include('menu', { active: 'obstaravania' }) %>
+
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem">
+      <h1 style="font-size:1.7rem;margin:0">Moje obstarávania</h1>
+      <a href="/ucet/obstaravania/nove" class="btn btn-primary btn-sm">Nové obstarávanie</a>
+    </div>
+    <p class="muted">Vytvorte vlastné obstarávanie na služby alebo materiál. Pozvite dodávateľov e-mailom, zbierajte ponuky, porovnávajte a vyberte víťaza.</p>
+
+    <% if (!items.length) { %>
+      <div class="empty">
+        <h3>Zatiaľ žiadne obstarávanie</h3>
+        <p>Začnite vytvorením nového obstarávania — stačí názov, popis a termín.</p>
+        <a href="/ucet/obstaravania/nove" class="btn btn-primary" style="margin-top:.6rem">Vytvoriť prvé obstarávanie</a>
+      </div>
+    <% } else { %>
+      <table class="t">
+        <thead>
+          <tr><th>Názov</th><th>Stav</th><th>Dodávatelia</th><th>Ponuky</th><th>Termín</th><th>Vytvorené</th></tr>
+        </thead>
+        <tbody>
+          <% for (const o of items) { const st = STAVY[o.stav] || STAVY.priprava; %>
+            <tr>
+              <td><a href="/ucet/obstaravania/<%= o.id %>" style="font-weight:700"><%= o.nazov %></a></td>
+              <td><span class="tag <%= st.cls %>"><%= st.label %></span></td>
+              <td class="mono"><%= o.dodavatelov %></td>
+              <td class="mono"><%= o.ponuk %></td>
+              <td><%= o.termin_ponuky ? new Date(o.termin_ponuky).toLocaleDateString('sk-SK') : '—' %></td>
+              <td class="small muted"><%= new Date(o.created_at).toLocaleDateString('sk-SK') %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/footer') %>

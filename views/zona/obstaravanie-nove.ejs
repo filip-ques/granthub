@@ -1,0 +1,40 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone">
+  <%- include('menu', { active: 'obstaravania' }) %>
+
+  <div>
+    <nav class="breadcrumb" aria-label="Omrvinková navigácia">
+      <a href="/ucet/obstaravania">Obstarávania</a><span class="sep">></span>Nové obstarávanie
+    </nav>
+    <h1 style="font-size:1.7rem">Nové obstarávanie</h1>
+    <p class="muted">Definujte predmet, podmienky a termín. Dodávateľov a podklady pridáte po vytvorení.</p>
+
+    <% if (error) { %>
+      <div class="error-summary" role="alert"><h2>Chyba</h2><ul><li><%= error %></li></ul></div>
+    <% } %>
+
+    <form method="post" action="/ucet/obstaravania" novalidate style="max-width:640px">
+      <div class="field">
+        <label for="o-nazov">Názov obstarávania *</label>
+        <input id="o-nazov" name="nazov" type="text" required autofocus value="<%= values.nazov || '' %>" placeholder="napr. Dodávka stavebného materiálu pre rekonštrukciu">
+      </div>
+      <div class="field">
+        <label for="o-popis">Popis / zadanie</label>
+        <textarea id="o-popis" name="popis" rows="5" placeholder="Stručný popis predmetu obstarávania, rozsah, požiadavky na dodávateľov…"><%= values.popis || '' %></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="field">
+          <label for="o-rozpocet">Predpokladaná hodnota (€)</label>
+          <input id="o-rozpocet" name="rozpocet" type="number" step="0.01" min="0" value="<%= values.rozpocet || '' %>" placeholder="bez DPH">
+        </div>
+        <div class="field">
+          <label for="o-termin">Termín na predloženie ponúk</label>
+          <input id="o-termin" name="termin_ponuky" type="datetime-local" value="<%= values.termin_ponuky || '' %>">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Vytvoriť obstarávanie</button>
+    </form>
+  </div>
+</div>
+<%- include('../partials/footer') %>

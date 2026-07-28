@@ -263,6 +263,83 @@ async function init() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS semp_refreshed_at TIMESTAMPTZ`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS ux_deminimis_ext ON deminimis_aids (user_id, ext_id) WHERE ext_id IS NOT NULL`);
   await pool.query(`ALTER TABLE vyzvy ADD COLUMN IF NOT EXISTS announced DATE`);
+
+  // ---------- Obstarávanie (procurement) ----------
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subory (
+      id         SERIAL PRIMARY KEY,
+      nazov      TEXT NOT NULL,
+      mime       TEXT NOT NULL DEFAULT '',
+      velkost    INTEGER NOT NULL DEFAULT 0,
+      data       BYTEA NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS obstaravania (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      nazov       TEXT NOT NULL,
+      popis       TEXT NOT NULL DEFAULT '',
+      rozpocet    NUMERIC,
+      termin_ponuky TIMESTAMPTZ,
+      stav        TEXT NOT NULL DEFAULT 'priprava',
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS ix_obst_user ON obstaravania (user_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS obstaravanie_podklady (
+      id               SERIAL PRIMARY KEY,
+      obstaravanie_id  INTEGER NOT NULL REFERENCES obstaravania(id) ON DELETE CASCADE,
+      subor_id         INTEGER NOT NULL REFERENCES subory(id) ON DELETE CASCADE,
+      kategoria        TEXT NOT NULL DEFAULT 'ine',
+      popis            TEXT NOT NULL DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS obstaravanie_kola (
+      id              SERIAL PRIMARY KEY,
+      obstaravanie_id INTEGER NOT NULL REFERENCES obstaravania(id) ON DELETE CASCADE,
+      cislo           INTEGER NOT NULL DEFAULT 1,
+      termin          TIMESTAMPTZ,
+      stav            TEXT NOT NULL DEFAULT 'otvorene',
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS obstaravanie_dodavatelia (
+      id              SERIAL PRIMARY KEY,
+      obstaravanie_id INTEGER NOT NULL REFERENCES obstaravania(id) ON DELETE CASCADE,
+      email           TEXT NOT NULL,
+      nazov           TEXT NOT NULL DEFAULT '',
+      token           TEXT UNIQUE NOT NULL,
+      stav            TEXT NOT NULL DEFAULT 'pozvany',
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS obstaravanie_ponuky (
+      id            SERIAL PRIMARY KEY,
+      kolo_id       INTEGER NOT NULL REFERENCES obstaravanie_kola(id) ON DELETE CASCADE,
+      dodavatel_id  INTEGER NOT NULL REFERENCES obstaravanie_dodavatelia(id) ON DELETE CASCADE,
+      suma          NUMERIC,
+      poznamka      TEXT NOT NULL DEFAULT '',
+      stav          TEXT NOT NULL DEFAULT 'dorucena',
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (kolo_id, dodavatel_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS obstaravanie_ponuka_subory (
+      ponuka_id INTEGER NOT NULL REFERENCES obstaravanie_ponuky(id) ON DELETE CASCADE,
+      subor_id  INTEGER NOT NULL REFERENCES subory(id) ON DELETE CASCADE,
+      PRIMARY KEY (ponuka_id, subor_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS obstaravanie_spravy (
+      id           SERIAL PRIMARY KEY,
+      dodavatel_id INTEGER NOT NULL REFERENCES obstaravanie_dodavatelia(id) ON DELETE CASCADE,
+      smer         TEXT NOT NULL DEFAULT 'obstaravatel',
+      text         TEXT NOT NULL DEFAULT '',
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
 }
 
 module.exports = { pool, init };

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= title %> — GrantHub</title>
+  <link rel="stylesheet" href="/css/app.css?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '1' %>">
+  <style>
+    .portal-header { background: var(--blue); color: #fff; padding: 1rem 0; }
+    .portal-header .container { display: flex; justify-content: space-between; align-items: center; }
+    .portal-brand { font-size: 1.2rem; font-weight: 700; }
+    .portal-brand span { color: #ffd617; }
+    .portal-badge { background: rgba(255,255,255,.15); border-radius: 4px; padding: .25rem .7rem; font-size: .8rem; }
+    .msg-bubble { margin-bottom: .5rem; padding: .5rem .7rem; border-radius: 6px; border-left: 3px solid var(--line-strong); background: #f5f6f7; }
+    .msg-bubble.own { background: #e8f0fe; border-left-color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="portal-header">
+  <div class="container">
+    <div class="portal-brand">Grant<span>Hub</span></div>
+    <span class="portal-badge">Dodávateľský portál</span>
+  </div>
+</div>
+
+<main>
+<div class="container" style="padding-top:1.5rem">
+
+  <% if (req.query.ok === 'ponuka') { %>
+    <div class="alert alert-success" role="alert"><strong>Ponuka bola úspešne odoslaná.</strong></div>
+  <% } %>
+  <% if (req.query.err === 'kolo_uzavrete') { %>
+    <div class="error-summary" role="alert"><h2>Kolo je uzavreté</h2><ul><li>Termín na predloženie ponuky uplynul alebo bolo kolo uzavreté obstarávateľom.</li></ul></div>
+  <% } %>
+
+  <h1 style="font-size:1.5rem"><%= d.obst_nazov %></h1>
+  <p class="muted">Obstarávateľ: <strong><%= d.obst_company || d.obst_email %></strong></p>
+
+  <% if (d.obst_popis) { %>
+    <div class="callout" style="margin:1rem 0">
+      <p style="margin:0;white-space:pre-wrap"><%= d.obst_popis %></p>
+    </div>
+  <% } %>
+
+  <table class="t" style="max-width:500px;margin-bottom:1.5rem">
+    <tbody>
+      <% if (d.rozpocet) { %><tr><th scope="row">Predpokladaná hodnota</th><td class="mono"><%= Number(d.rozpocet).toLocaleString('sk-SK') %> €</td></tr><% } %>
+      <% if (d.termin_ponuky) { %><tr><th scope="row">Termín ponúk</th><td><%= new Date(d.termin_ponuky).toLocaleDateString('sk-SK') %></td></tr><% } %>
+      <tr><th scope="row">Stav</th><td><%= d.obst_stav === 'prebieha' ? 'Prebieha' : d.obst_stav === 'vyhodnotenie' ? 'Vyhodnotenie' : d.obst_stav === 'ukoncene' ? 'Ukončené' : d.obst_stav %></td></tr>
+    </tbody>
+  </table>
+
+  <%
+    const ptab = req.query.tab || 'ponuka';
+    const ptabs = [
+      { key: 'ponuka', label: 'Cenová ponuka' },
+      { key: 'podklady', label: `Podklady (${podklady.length})` },
+      { key: 'komunikacia', label: `Komunikácia (${spravy.length})` },
+    ];
+  %>
+  <nav class="tabs" style="margin:1rem 0;border-bottom:2px solid var(--line)">
+    <% for (const t of ptabs) { %>
+      <a href="?tab=<%= t.key %>" style="padding:.5rem 1rem;display:inline-block;font-weight:600;font-size:.85rem;text-decoration:none;border-bottom:2px solid <%= ptab===t.key ? 'var(--blue)' : 'transparent' %>;margin-bottom:-2px;color:<%= ptab===t.key ? 'var(--blue)' : 'var(--muted)' %>"><%= t.label %></a>
+    <% } %>
+  </nav>
+
+  <% if (ptab === 'ponuka') { %>
+    <!-- ═══ CENOVÁ PONUKA ═══ -->
+    <% if (otvoreneKolo) { %>
+      <h2 style="font-size:1.1rem">Predložiť ponuku — <%= otvoreneKolo.cislo %>. kolo</h2>
+      <% const existujuca = ponuky.find(p => p.kolo_cislo === otvoreneKolo.cislo); %>
+      <% if (existujuca) { %>
+        <div class="alert alert-info" role="alert" style="margin-bottom:1rem">
+          <strong>V tomto kole ste už ponuku odoslali</strong> (suma: <%= existujuca.suma ? Number(existujuca.suma).toLocaleString('sk-SK') + ' €' : 'neuvedená' %>). Odoslaním novej ju prepíšete.
+        </div>
+      <% } %>
+      <form method="post" action="/obstaravanie/<%= d.token %>/ponuka" enctype="multipart/form-data" style="max-width:540px">
+        <div class="field">
+          <label for="p-suma">Celková cena ponuky (€, bez DPH) *</label>
+          <input id="p-suma" name="suma" type="text" inputmode="decimal" required placeholder="napr. 12 500" value="<%= existujuca ? existujuca.suma : '' %>">
+        </div>
+        <div class="field">
+          <label for="p-poznamka">Poznámka k ponuke</label>
+          <textarea id="p-poznamka" name="poznamka" rows="4" placeholder="Opis predmetu ponuky, podmienky, termín dodania…"><%= existujuca ? existujuca.poznamka : '' %></textarea>
+        </div>
+        <div class="field">
+          <label>Prílohy (cenová ponuka, podklady, certifikáty)</label>
+          <input type="file" name="subory" multiple>
+          <div class="hint small muted">Max 25 MB na súbor. PDF, DOC, XLS, ZIP, obrázky.</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Odoslať ponuku</button>
+      </form>
+    <% } else { %>
+      <div class="callout" style="margin:1rem 0">
+        <p style="margin:0"><strong>Momentálne nie je otvorené žiadne kolo na predkladanie ponúk.</strong><br>
+        <% if (d.obst_stav === 'ukoncene') { %>Obstarávanie bolo ukončené.<% } else { %>Keď obstarávateľ otvorí nové kolo, dostanete e-mail s výzvou.<% } %></p>
+      </div>
+    <% } %>
+
+    <% if (ponuky.length) { %>
+      <h3 style="margin-top:1.5rem">Vaše predchádzajúce ponuky</h3>
+      <table class="t">
+        <thead><tr><th>Kolo</th><th>Suma</th><th>Stav</th><th>Dátum</th></tr></thead>
+        <tbody>
+          <% for (const p of ponuky) { %>
+            <tr>
+              <td><%= p.kolo_cislo %>. kolo</td>
+              <td class="mono"><%= p.suma ? Number(p.suma).toLocaleString('sk-SK') + ' €' : '—' %></td>
+              <td>
+                <% if (p.stav === 'dorucena') { %><span class="tag accent">Doručená</span>
+                <% } else if (p.stav === 'ok') { %><span class="tag ok">Akceptovaná</span>
+                <% } else { %><span class="tag">Vyradená</span><% } %>
+              </td>
+              <td class="small muted"><%= new Date(p.created_at).toLocaleDateString('sk-SK') %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+
+  <% } else if (ptab === 'podklady') { %>
+    <!-- ═══ PODKLADY ═══ -->
+    <% if (!podklady.length) { %>
+      <div class="empty"><h3>Žiadne podklady</h3><p>Obstarávateľ zatiaľ nenahral žiadne dokumenty.</p></div>
+    <% } else { %>
+      <table class="t">
+        <thead><tr><th>Súbor</th><th>Kategória</th><th>Veľkosť</th></tr></thead>
+        <tbody>
+          <% for (const p of podklady) { %>
+            <tr>
+              <td><a href="/obstaravanie/<%= d.token %>/subor/<%= p.subor_id %>"><%= p.subor_nazov %></a></td>
+              <td class="small"><%= KATEGORIE[p.kategoria] || p.kategoria %></td>
+              <td class="small mono"><%= (p.velkost / 1024).toFixed(0) %> kB</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    <% } %>
+
+  <% } else if (ptab === 'komunikacia') { %>
+    <!-- ═══ KOMUNIKÁCIA ═══ -->
+    <% if (!spravy.length) { %><p class="muted">Zatiaľ žiadna komunikácia s obstarávateľom.</p><% } %>
+    <div style="max-width:600px">
+      <% for (const sp of spravy.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))) { %>
+        <div class="msg-bubble <%= sp.smer === 'dodavatel' ? 'own' : '' %>">
+          <div class="small" style="margin-bottom:.2rem;font-weight:600;color:<%= sp.smer === 'dodavatel' ? 'var(--blue)' : 'var(--ink)' %>"><%= sp.smer === 'dodavatel' ? 'Vy' : (d.obst_company || 'Obstarávateľ') %> · <span class="muted" style="font-weight:400"><%= new Date(sp.created_at).toLocaleString('sk-SK') %></span></div>
+          <p style="margin:0;white-space:pre-wrap"><%= sp.text %></p>
+        </div>
+      <% } %>
+      <% if (['prebieha','vyhodnotenie'].includes(d.obst_stav)) { %>
+        <form method="post" action="/obstaravanie/<%= d.token %>/sprava" style="display:flex;gap:.5rem;margin-top:.8rem">
+          <input name="text" type="text" placeholder="Napíšte správu obstarávateľovi…" required style="flex:1">
+          <button class="btn btn-primary btn-sm">Odoslať</button>
+        </form>
+      <% } %>
+    </div>
+  <% } %>
+
+</div>
+</main>
+
+<footer class="site" style="margin-top:3rem">
+  <div class="container">
+    <div class="foot-bottom">
+      <span>&copy; <%= new Date().getFullYear() %> GrantHub &mdash; prevádzkuje Ayerf s. r. o., Ľubovnianska 12, 851 07 Bratislava-Petržalka</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

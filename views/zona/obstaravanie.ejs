@@ -1,0 +1,263 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone">
+  <%- include('menu', { active: 'obstaravania' }) %>
+
+  <div>
+    <nav class="breadcrumb" aria-label="Omrvinková navigácia">
+      <a href="/ucet/obstaravania">Obstarávania</a><span class="sep">></span><%= obst.nazov %>
+    </nav>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+      <h1 style="font-size:1.5rem;margin:0"><%= obst.nazov %></h1>
+      <span class="tag <%= (STAVY[obst.stav]||{}).cls %>"><%= (STAVY[obst.stav]||{}).label || obst.stav %></span>
+    </div>
+
+    <%
+      const tabs = [
+        { key: 'prehlad', label: 'Prehľad' },
+        { key: 'podklady', label: `Podklady (${podklady.length})` },
+        { key: 'dodavatelia', label: `Dodávatelia (${dodavatelia.length})` },
+        { key: 'ponuky', label: `Ponuky (${ponuky.length})` },
+        { key: 'komunikacia', label: `Komunikácia (${spravy.length})` },
+      ];
+    %>
+    <nav class="tabs" style="margin:1rem 0 1.2rem;border-bottom:2px solid var(--line)">
+      <% for (const t of tabs) { %>
+        <a href="?tab=<%= t.key %>" class="<%= tab === t.key ? 'active' : '' %>" style="padding:.5rem 1rem;display:inline-block;font-weight:600;font-size:.85rem;text-decoration:none;border-bottom:2px solid <%= tab===t.key ? 'var(--blue)' : 'transparent' %>;margin-bottom:-2px;color:<%= tab===t.key ? 'var(--blue)' : 'var(--muted)' %>"><%= t.label %></a>
+      <% } %>
+    </nav>
+
+    <% if (tab === 'prehlad') { %>
+      <!-- ═══ PREHĽAD ═══ -->
+      <form method="post" action="/ucet/obstaravania/<%= obst.id %>" style="max-width:640px">
+        <div class="field">
+          <label for="o-nazov">Názov</label>
+          <input id="o-nazov" name="nazov" type="text" required value="<%= obst.nazov %>">
+        </div>
+        <div class="field">
+          <label for="o-popis">Popis / zadanie</label>
+          <textarea id="o-popis" name="popis" rows="5"><%= obst.popis %></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="field">
+            <label for="o-rozpocet">Predpokladaná hodnota (€)</label>
+            <input id="o-rozpocet" name="rozpocet" type="number" step="0.01" min="0" value="<%= obst.rozpocet || '' %>">
+          </div>
+          <div class="field">
+            <label for="o-termin">Termín ponúk</label>
+            <input id="o-termin" name="termin_ponuky" type="datetime-local" value="<%= obst.termin_ponuky ? new Date(obst.termin_ponuky).toISOString().slice(0,16) : '' %>">
+          </div>
+        </div>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+          <button type="submit" class="btn btn-primary btn-sm">Uložiť zmeny</button>
+          <% if (['priprava','prebieha','vyhodnotenie'].includes(obst.stav)) { %>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="if(confirm('Naozaj zrušiť?'))document.getElementById('f-zrusit').submit()">Zrušiť obstarávanie</button>
+          <% } %>
+        </div>
+      </form>
+      <form id="f-zrusit" method="post" action="/ucet/obstaravania/<%= obst.id %>/zrusit" style="display:none"></form>
+
+    <% } else if (tab === 'podklady') { %>
+      <!-- ═══ PODKLADY ═══ -->
+      <% if (['priprava','prebieha'].includes(obst.stav)) { %>
+        <form method="post" action="/ucet/obstaravania/<%= obst.id %>/podklady" enctype="multipart/form-data" style="margin-bottom:1.5rem;padding:1rem;border:1px solid var(--line);border-radius:8px;background:var(--bg-grey)">
+          <h3 style="margin:0 0 .6rem;font-size:1rem">Nahrať podklady</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.6rem">
+            <div class="field" style="margin:0">
+              <label for="p-kat" class="small">Kategória</label>
+              <select id="p-kat" name="kategoria">
+                <% for (const [k,v] of Object.entries(KATEGORIE)) { %><option value="<%= k %>"><%= v %></option><% } %>
+              </select>
+            </div>
+            <div class="field" style="margin:0">
+              <label for="p-popis" class="small">Popis (nepovinné)</label>
+              <input id="p-popis" name="popis" type="text" placeholder="stručný popis">
+            </div>
+          </div>
+          <div class="field" style="margin:0">
+            <input type="file" name="subory" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.jpg,.png">
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:.5rem">Nahrať</button>
+        </form>
+      <% } %>
+      <% if (!podklady.length) { %>
+        <div class="empty"><h3>Žiadne podklady</h3><p>Nahrajte dokumentáciu, výkaz výmer alebo zmluvu.</p></div>
+      <% } else { %>
+        <table class="t">
+          <thead><tr><th>Súbor</th><th>Kategória</th><th>Veľkosť</th><th></th></tr></thead>
+          <tbody>
+            <% for (const p of podklady) { %>
+              <tr>
+                <td><a href="/ucet/obstaravania/<%= obst.id %>/subor/<%= p.subor_id %>"><%= p.subor_nazov %></a></td>
+                <td class="small"><%= KATEGORIE[p.kategoria] || p.kategoria %></td>
+                <td class="small mono"><%= (p.velkost / 1024).toFixed(0) %> kB</td>
+                <td>
+                  <% if (['priprava','prebieha'].includes(obst.stav)) { %>
+                    <form method="post" action="/ucet/obstaravania/<%= obst.id %>/podklady/<%= p.id %>/zmazat" data-confirm="Zmazať?" style="display:inline">
+                      <button class="btn btn-ghost btn-sm" style="font-size:.75rem">Zmazať</button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      <% } %>
+
+    <% } else if (tab === 'dodavatelia') { %>
+      <!-- ═══ DODÁVATELIA ═══ -->
+      <% if (req.query.sent) { %><div class="alert alert-success" role="alert"><strong>Odoslaných pozvánok: <%= req.query.sent %></strong></div><% } %>
+
+      <% if (['priprava','prebieha'].includes(obst.stav)) { %>
+        <form method="post" action="/ucet/obstaravania/<%= obst.id %>/dodavatelia" style="margin-bottom:1.5rem;padding:1rem;border:1px solid var(--line);border-radius:8px;background:var(--bg-grey)">
+          <h3 style="margin:0 0 .6rem;font-size:1rem">Pridať dodávateľov</h3>
+          <div class="field" style="margin:0">
+            <label for="d-emaily" class="small">E-maily dodávateľov (jeden na riadok alebo oddelené čiarkou)</label>
+            <textarea id="d-emaily" name="emaily" rows="3" placeholder="dodavatel1@firma.sk&#10;dodavatel2@ina-firma.sk"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:.5rem">Pridať</button>
+        </form>
+      <% } %>
+
+      <% if (!dodavatelia.length) { %>
+        <div class="empty"><h3>Žiadni dodávatelia</h3><p>Pridajte e-maily dodávateľov, ktorých chcete osloviť.</p></div>
+      <% } else { %>
+        <table class="t">
+          <thead><tr><th>E-mail</th><th>Názov</th><th>Stav</th><th></th></tr></thead>
+          <tbody>
+            <% for (const d of dodavatelia) { %>
+              <tr>
+                <td class="mono small"><%= d.email %></td>
+                <td><%= d.nazov || '—' %></td>
+                <td>
+                  <% if (d.stav === 'pozvany') { %><span class="tag muted">Čaká na odoslanie</span>
+                  <% } else if (d.stav === 'osloveny') { %><span class="tag brand">Oslovený</span>
+                  <% } else if (d.stav === 'vybrany') { %><span class="tag ok">Víťaz</span>
+                  <% } else if (d.stav === 'vyradeny') { %><span class="tag">Vyradený</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (d.stav === 'osloveny' && ['prebieha','vyhodnotenie'].includes(obst.stav)) { %>
+                    <form method="post" action="/ucet/obstaravania/<%= obst.id %>/dodavatelia/<%= d.id %>/vyradit" data-confirm="Vyradiť dodávateľa?" style="display:inline">
+                      <button class="btn btn-ghost btn-sm" style="font-size:.75rem">Vyradiť</button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+        <% const neodoslane = dodavatelia.filter(d => d.stav === 'pozvany'); %>
+        <% if (neodoslane.length) { %>
+          <form method="post" action="/ucet/obstaravania/<%= obst.id %>/oslovit" style="margin-top:1rem">
+            <button class="btn btn-primary">Odoslať pozvánky (<%= neodoslane.length %>)</button>
+            <span class="small muted" style="margin-left:.5rem">Dodávatelia dostanú e-mail s odkazom na predloženie ponuky.</span>
+          </form>
+        <% } %>
+      <% } %>
+
+    <% } else if (tab === 'ponuky') { %>
+      <!-- ═══ PONUKY + KOLÁ ═══ -->
+      <% for (const kolo of kola) { %>
+        <div style="margin-bottom:1.5rem;padding:1rem;border:1px solid var(--line);border-radius:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+            <h3 style="margin:0;font-size:1rem"><%= kolo.cislo %>. kolo <span class="tag <%= kolo.stav === 'otvorene' ? 'brand' : 'muted' %>"><%= kolo.stav === 'otvorene' ? 'Otvorené' : 'Uzavreté' %></span></h3>
+            <% if (kolo.termin) { %><span class="small muted">termín: <%= new Date(kolo.termin).toLocaleDateString('sk-SK') %></span><% } %>
+          </div>
+          <% const koloPonuky = ponuky.filter(p => p.kolo_cislo === kolo.cislo); %>
+          <% if (!koloPonuky.length) { %>
+            <p class="small muted">Zatiaľ žiadne ponuky v tomto kole.</p>
+          <% } else { %>
+            <table class="t">
+              <thead><tr><th>Dodávateľ</th><th>Suma</th><th>Poznámka</th><th>Stav</th><th></th></tr></thead>
+              <tbody>
+                <% for (const p of koloPonuky) { %>
+                  <tr>
+                    <td><%= p.dod_nazov || p.dod_email %></td>
+                    <td class="mono"><%= p.suma ? Number(p.suma).toLocaleString('sk-SK') + ' €' : '—' %></td>
+                    <td class="small"><%= p.poznamka ? (p.poznamka.length > 80 ? p.poznamka.slice(0,80)+'…' : p.poznamka) : '' %></td>
+                    <td>
+                      <% if (p.stav === 'dorucena') { %><span class="tag accent">Doručená</span>
+                      <% } else if (p.stav === 'ok') { %><span class="tag ok">Akceptovaná</span>
+                      <% } else { %><span class="tag">Vyradená</span><% } %>
+                    </td>
+                    <td>
+                      <% if (kolo.stav === 'otvorene' || obst.stav === 'vyhodnotenie') { %>
+                        <form method="post" action="/ucet/obstaravania/<%= obst.id %>/ponuky/<%= p.id %>/stav" style="display:inline">
+                          <% if (p.stav !== 'ok') { %><button name="stav" value="ok" class="btn btn-ghost btn-sm" style="font-size:.7rem">OK</button><% } %>
+                          <% if (p.stav !== 'vyradena') { %><button name="stav" value="vyradena" class="btn btn-ghost btn-sm" style="font-size:.7rem">Vyradiť</button><% } %>
+                        </form>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          <% } %>
+          <% if (kolo.stav === 'otvorene' && ['prebieha'].includes(obst.stav)) { %>
+            <form method="post" action="/ucet/obstaravania/<%= obst.id %>/kola/<%= kolo.id %>/uzavriet" style="margin-top:.5rem" data-confirm="Uzavrieť kolo?">
+              <button class="btn btn-ghost btn-sm">Uzavrieť kolo</button>
+            </form>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (['prebieha','vyhodnotenie'].includes(obst.stav)) { %>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem">
+          <% if (!otvoreneKolo) { %>
+            <form method="post" action="/ucet/obstaravania/<%= obst.id %>/kola" style="display:flex;gap:.6rem;align-items:end">
+              <div class="field" style="margin:0">
+                <label class="small">Nový termín</label>
+                <input name="termin" type="datetime-local" style="min-height:36px">
+              </div>
+              <button class="btn btn-primary btn-sm">Otvoriť ďalšie kolo</button>
+            </form>
+          <% } %>
+          <% if (obst.stav === 'vyhodnotenie' || (!otvoreneKolo && ponuky.length)) { %>
+            <form method="post" action="/ucet/obstaravania/<%= obst.id %>/vitaz" style="display:flex;gap:.6rem;align-items:end">
+              <div class="field" style="margin:0">
+                <label class="small">Víťaz</label>
+                <select name="dodavatel_id">
+                  <option value="">— vyberte —</option>
+                  <% for (const d of dodavatelia.filter(dd => dd.stav !== 'vyradeny')) { %>
+                    <option value="<%= d.id %>"><%= d.nazov || d.email %></option>
+                  <% } %>
+                </select>
+              </div>
+              <button class="btn btn-primary btn-sm">Ukončiť a vybrať víťaza</button>
+            </form>
+          <% } %>
+        </div>
+      <% } %>
+
+    <% } else if (tab === 'komunikacia') { %>
+      <!-- ═══ KOMUNIKÁCIA ═══ -->
+      <% const dodByEmail = {}; dodavatelia.forEach(d => { dodByEmail[d.id] = d; }); %>
+      <% if (!dodavatelia.filter(d => d.stav !== 'pozvany').length) { %>
+        <div class="empty"><h3>Žiadna komunikácia</h3><p>Najprv oslovte dodávateľov.</p></div>
+      <% } else { %>
+        <% for (const d of dodavatelia.filter(dd => dd.stav !== 'pozvany')) { %>
+          <details class="acc" style="margin-bottom:.8rem" <% if (dodavatelia.filter(dd=>dd.stav!=='pozvany').length===1) { %>open<% } %>>
+            <summary><%= d.nazov || d.email %></summary>
+            <div style="padding:.5rem 0">
+              <% const dodSpravy = spravy.filter(s => s.dodavatel_id === d.id).sort((a,b) => new Date(a.created_at) - new Date(b.created_at)); %>
+              <% if (!dodSpravy.length) { %><p class="small muted">Zatiaľ žiadne správy.</p><% } %>
+              <% for (const sp of dodSpravy) { %>
+                <div style="margin-bottom:.5rem;padding:.5rem .7rem;border-radius:6px;background:<%= sp.smer === 'obstaravatel' ? '#e8f0fe' : '#f5f6f7' %>;border-left:3px solid <%= sp.smer === 'obstaravatel' ? 'var(--blue)' : 'var(--line-strong)' %>">
+                  <div class="small" style="margin-bottom:.2rem;font-weight:600;color:<%= sp.smer === 'obstaravatel' ? 'var(--blue)' : 'var(--ink)' %>"><%= sp.smer === 'obstaravatel' ? 'Vy' : (d.nazov || d.email) %> · <span class="muted" style="font-weight:400"><%= new Date(sp.created_at).toLocaleString('sk-SK') %></span></div>
+                  <p style="margin:0;white-space:pre-wrap"><%= sp.text %></p>
+                </div>
+              <% } %>
+              <form method="post" action="/ucet/obstaravania/<%= obst.id %>/spravy/<%= d.id %>" style="display:flex;gap:.5rem;margin-top:.5rem">
+                <input name="text" type="text" placeholder="Napíšte správu…" required style="flex:1">
+                <button class="btn btn-primary btn-sm">Odoslať</button>
+              </form>
+            </div>
+          </details>
+        <% } %>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/footer') %>

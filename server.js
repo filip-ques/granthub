@@ -16,6 +16,7 @@ const { runAiDescriptions } = require('./src/ai-descriptions');
 const { runAiDetails } = require('./src/ai-details');
 const { runAiTenders } = require('./src/ai-tenders');
 const tcat = require('./src/tender-catalog');
+const obstaravania = require('./src/obstaravania');
 const { CATEGORIES, APPLICANTS, REGIONS, SEGMENTS, SERVICES } = require('./src/data');
 
 const crypto = require('crypto');
@@ -537,6 +538,10 @@ app.get('/ucet/zdroje', auth.requireLogin, async (req, res) => {
   const countMap = Object.fromEntries(counts.map((c) => [c.source, c]));
   res.render('zona/zdroje', { title: 'Zdroje dát', SOURCE_INFO, countMap, tenderStats: tcount[0], jobs });
 });
+
+// ---------- Obstarávanie ----------
+app.use('/ucet/obstaravania', auth.requireLogin, obstaravania.router);
+app.use('/obstaravanie', obstaravania.portal);
 
 // ---------- Cenník ----------
 app.get('/cennik', (req, res) => res.render('cennik', { title: 'Cenník' }));
