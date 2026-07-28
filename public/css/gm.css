@@ -97,6 +97,11 @@
   .zone h1 { font-size: 1.4rem !important; }
   /* Formulárové riadky v zóne na jeden stĺpec (rieši aj app.css, poistka) */
   .zone .field-row { grid-template-columns: 1fr; }
-  /* Akčné tlačidlá pod kartami strážcov/produktov nech sa zalomia */
-  .zone .panel > div[style*="flex"] { flex-wrap: wrap; }
+  /* Poistka: inline 2-stĺpcové gridy formulárov — inline štýl prebije len !important */
+  .zone div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+  /* Inline flex riadky formulárov v zóne nech sa zalomia a vedia zmenšiť */
+  .zone form[style*="display:flex"], .zone div[style*="display:flex"] { flex-wrap: wrap; }
+  .zone form[style*="display:flex"] .field { min-width: 0; }
+  /* Inline width na riadkových hlavičkách tabuliek (firma.ejs) — prebije len !important */
+  .zone table.t th[scope="row"] { width: auto !important; }
 }

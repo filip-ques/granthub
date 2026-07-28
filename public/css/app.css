@@ -275,6 +275,11 @@ section { padding: 3rem 0; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .panel-head h2, .panel-head h3 { margin: 0; }
 
+/* Taby (detail obstarávania, dodávateľský portál) — na úzkom displeji
+   vodorovný scroll namiesto viacriadkového zalomenia */
+.tabs { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.tabs a { flex: 0 0 auto; white-space: nowrap; }
+
 /* table */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0; }
 table.t { width: 100%; border-collapse: collapse; }

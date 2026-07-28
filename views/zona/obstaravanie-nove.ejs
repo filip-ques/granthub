@@ -23,7 +23,7 @@
         <label for="o-popis">Popis / zadanie</label>
         <textarea id="o-popis" name="popis" rows="5" placeholder="Stručný popis predmetu obstarávania, rozsah, požiadavky na dodávateľov…"><%= values.popis || '' %></textarea>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="field-row" style="gap:1rem">
         <div class="field">
           <label for="o-rozpocet">Predpokladaná hodnota (€)</label>
           <input id="o-rozpocet" name="rozpocet" type="number" step="0.01" min="0" value="<%= values.rozpocet || '' %>" placeholder="bez DPH">

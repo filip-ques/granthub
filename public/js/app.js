@@ -26,6 +26,12 @@
     wrap.appendChild(table);
   });
 
+  // Scroll the active zone-menu tab into view (menu is a horizontal strip on mobile)
+  var zActive = document.querySelector('.zmenu a.active');
+  if (zActive && zActive.scrollIntoView) {
+    zActive.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+
   // Collapsible filter panel on mobile
   var fToggle = document.querySelector('.filters-toggle');
   var fBody = document.getElementById('filtersBody');

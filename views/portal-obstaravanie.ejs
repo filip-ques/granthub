@@ -26,10 +26,10 @@
 <main>
 <div class="container" style="padding-top:1.5rem">
 
-  <% if (req.query.ok === 'ponuka') { %>
+  <% if (query.ok === 'ponuka') { %>
     <div class="alert alert-success" role="alert"><strong>Ponuka bola úspešne odoslaná.</strong></div>
   <% } %>
-  <% if (req.query.err === 'kolo_uzavrete') { %>
+  <% if (query.err === 'kolo_uzavrete') { %>
     <div class="error-summary" role="alert"><h2>Kolo je uzavreté</h2><ul><li>Termín na predloženie ponuky uplynul alebo bolo kolo uzavreté obstarávateľom.</li></ul></div>
   <% } %>
 
@@ -51,7 +51,7 @@
   </table>
 
   <%
-    const ptab = req.query.tab || 'ponuka';
+    const ptab = query.tab || 'ponuka';
     const ptabs = [
       { key: 'ponuka', label: 'Cenová ponuka' },
       { key: 'podklady', label: `Podklady (${podklady.length})` },
@@ -148,8 +148,8 @@
         </div>
       <% } %>
       <% if (['prebieha','vyhodnotenie'].includes(d.obst_stav)) { %>
-        <form method="post" action="/obstaravanie/<%= d.token %>/sprava" style="display:flex;gap:.5rem;margin-top:.8rem">
-          <input name="text" type="text" placeholder="Napíšte správu obstarávateľovi…" required style="flex:1">
+        <form method="post" action="/obstaravanie/<%= d.token %>/sprava" style="display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap">
+          <input name="text" type="text" placeholder="Napíšte správu obstarávateľovi…" required style="flex:1;min-width:0">
           <button class="btn btn-primary btn-sm">Odoslať</button>
         </form>
       <% } %>
@@ -166,5 +166,6 @@
     </div>
   </div>
 </footer>
+<script src="/js/app.js?v=<%= typeof assetVersion !== 'undefined' ? assetVersion : '1' %>"></script>
 </body>
 </html>
