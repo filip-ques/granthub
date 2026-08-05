@@ -141,3 +141,7 @@ Na webe nie sú žiadne vymyslené štatistiky, referencie ani firemné údaje.
 
 Ayerf s. r. o., Ľubovnianska 12, 851 07 Bratislava - mestská časť Petržalka
 IČO: 50991175 · DIČ: 2120570034 · IČ DPH: SK2120570034 (§4, registrácia od 1. 11. 2025)
+
+## Brand Ops
+
+Tento repozitár je napojený na Brand Ops Change Console — úpravy sa vykonávajú automaticky cez Claude agenta.
