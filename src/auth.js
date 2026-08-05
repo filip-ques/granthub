@@ -5,7 +5,7 @@ const mail = require('./mailer');
 const { sendMail, smtpConfigured } = mail;
 
 const router = express.Router();
-const TOKEN_TTL_MIN = 15;
+const TOKEN_TTL_MIN = 60;
 
 function baseUrl(req) {
   return process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
@@ -131,7 +131,7 @@ router.get('/auth/overit', async (req, res) => {
     return res.status(400).render('chyba', {
       title: 'Neplatný odkaz',
       heading: 'Prihlasovací odkaz je neplatný alebo expirovaný',
-      message: 'Odkaz platí 15 minút a dá sa použiť len raz. Požiadajte o nový.',
+      message: 'Odkaz platí 60 minút a dá sa použiť len raz. Požiadajte o nový.',
       backLink: '/prihlasenie',
       backLabel: 'Späť na prihlásenie',
     });
@@ -152,7 +152,7 @@ router.post('/auth/overit', async (req, res) => {
     return res.status(400).render('chyba', {
       title: 'Neplatný odkaz',
       heading: 'Prihlasovací odkaz je neplatný alebo expirovaný',
-      message: 'Odkaz platí 15 minút a dá sa použiť len raz. Požiadajte o nový.',
+      message: 'Odkaz platí 60 minút a dá sa použiť len raz. Požiadajte o nový.',
       backLink: '/prihlasenie',
       backLabel: 'Späť na prihlásenie',
     });
