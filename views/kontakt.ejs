@@ -22,6 +22,7 @@
     <% } %>
 
     <form method="post" action="/kontakt" class="panel" novalidate>
+      <%- include('partials/antispam') %>
       <div class="field">
         <label for="k-name">Meno a priezvisko *</label>
         <input id="k-name" name="name" type="text" autocomplete="name" required value="<%= values.name || '' %>">

@@ -169,6 +169,17 @@ async function init() {
     CREATE INDEX IF NOT EXISTS ix_activity_time ON activity_events (created_at DESC);
     CREATE INDEX IF NOT EXISTS ix_activity_user ON activity_events (user_id, created_at DESC);
 
+    CREATE TABLE IF NOT EXISTS spam_events (
+      id          SERIAL PRIMARY KEY,
+      path        TEXT NOT NULL,
+      reason      TEXT NOT NULL,
+      ip          TEXT NOT NULL DEFAULT '',
+      user_agent  TEXT NOT NULL DEFAULT '',
+      payload     TEXT NOT NULL DEFAULT '',
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS ix_spam_time ON spam_events (created_at DESC);
+
     CREATE TABLE IF NOT EXISTS job_state (
       key        TEXT PRIMARY KEY,
       value      TEXT,

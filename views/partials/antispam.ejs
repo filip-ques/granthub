@@ -1,0 +1,5 @@
+<%# Antispam: honeypot (skryté pole, bot ho vyplní) + podpísaný timestamp %>
+<div class="hp-field" aria-hidden="true">
+  <label>Webová stránka<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+</div>
+<input type="hidden" name="fts" value="<%= antispamToken %>">

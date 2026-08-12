@@ -160,6 +160,16 @@ router.get('/admin/pouzivatelia', async (req, res) => {
   res.render('admin/pouzivatelia', { title: 'Admin — používatelia', users });
 });
 
+router.get('/admin/spam', async (req, res) => {
+  const { rows: events } = await pool.query(
+    `SELECT * FROM spam_events ORDER BY created_at DESC LIMIT 200`);
+  const { rows: [stats] } = await pool.query(
+    `SELECT count(*)::int AS spolu,
+       count(*) FILTER (WHERE created_at > now() - interval '24 hours')::int AS za_24h
+     FROM spam_events`);
+  res.render('admin/spam', { title: 'Admin — spam', events, stats });
+});
+
 router.get('/admin/aktivita', async (req, res) => {
   const q = String(req.query.q || '').trim();
   const params = [];

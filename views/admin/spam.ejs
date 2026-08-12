@@ -1,0 +1,33 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+<div class="container zone">
+  <%- include('partials/menu', { active: 'spam' }) %>
+  <div>
+    <div class="panel-head">
+      <h1 style="font-size:1.7rem;margin:0">Zachytený spam</h1>
+      <span class="small muted"><%= stats.za_24h %> pokusov za 24 h · spolu <%= stats.spolu.toLocaleString('sk-SK') %></span>
+    </div>
+    <p class="small muted">Pokusy botov zablokované ochranou formulárov (honeypot, časová pasca, heuristiky). Bot dostane falošné potvrdenie, aby sa nemal z čoho učiť.</p>
+    <% if (!events.length) { %>
+      <div class="empty"><h3>Zatiaľ žiadny zachytený spam</h3><p>Ochrana beží — zachytené pokusy sa zobrazia tu.</p></div>
+    <% } else { %>
+      <div class="table-scroll">
+        <table class="t">
+          <thead><tr><th>Čas</th><th>Formulár</th><th>Dôvod</th><th>IP</th><th>Obsah</th></tr></thead>
+          <tbody>
+            <% for (const e of events) { %>
+              <tr>
+                <td class="small nowrap"><%= new Date(e.created_at).toLocaleString('sk-SK') %></td>
+                <td class="small mono"><%= e.path %></td>
+                <td><span class="tag"><%= e.reason %></span></td>
+                <td class="small mono"><%= e.ip %></td>
+                <td class="small muted" style="max-width:360px;overflow-wrap:anywhere"><%= e.payload.slice(0, 220) %></td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/footer') %>

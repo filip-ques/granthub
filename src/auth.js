@@ -3,6 +3,7 @@ const express = require('express');
 const { pool } = require('./db');
 const mail = require('./mailer');
 const { sendMail, smtpConfigured } = mail;
+const antispam = require('./antispam');
 
 const router = express.Router();
 const TOKEN_TTL_MIN = 60;
@@ -58,7 +59,8 @@ async function sendMagicLink(req, email, { next = '', subject, intro } = {}) {
   return link;
 }
 
-router.post('/prihlasenie', async (req, res) => {
+// Kratší minMs — formulár má jediné pole a autofill používatelia sú rýchli
+router.post('/prihlasenie', antispam.guard({ minMs: 1200 }), async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   let next = String(req.body.next || '');
   const register = req.body.register === '1';

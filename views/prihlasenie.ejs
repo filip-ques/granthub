@@ -17,6 +17,7 @@
       <% } %>
 
       <form method="post" action="/prihlasenie" novalidate>
+        <%- include('partials/antispam') %>
         <input type="hidden" name="next" value="<%= next %>">
         <% if (register) { %><input type="hidden" name="register" value="1"><% } %>
         <div class="field">

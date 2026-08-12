@@ -546,3 +546,6 @@ details.acc[open] summary { margin-bottom: .6rem; }
 .act-err { color: #b30000; font-weight: 700; }
 .chip-row { display: flex; flex-wrap: wrap; gap: .35rem; }
 .pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1rem; }
+
+/* Antispam honeypot — pole mimo obrazovky, človek ho nikdy nevidí */
+.hp-field { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden; }

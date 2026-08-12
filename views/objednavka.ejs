@@ -19,6 +19,7 @@
       <% } %>
 
       <form method="post" action="/objednavka" class="panel" novalidate>
+      <%- include('partials/antispam') %>
         <input type="hidden" name="sluzba" value="<%= service.slug %>">
         <% if (vyzva) { %><input type="hidden" name="vyzva" value="<%= vyzva.slug %>"><% } %>
         <% if (tender) { %><input type="hidden" name="tender" value="<%= tender.id %>"><% } %>

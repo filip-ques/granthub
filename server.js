@@ -9,6 +9,7 @@ const auth = require('./src/auth');
 const { runIngest } = require('./src/ingest');
 const { runRadar, unsubToken } = require('./src/radarjob');
 const admin = require('./src/admin');
+const antispam = require('./src/antispam');
 const { runTenderIngest } = require('./src/tender-ingest');
 const { runScrapers } = require('./src/scrape-ingest');
 const { runCompanyRefresh } = require('./src/company');
@@ -110,7 +111,7 @@ app.use((req, res, next) => {
   res.locals.TENDER_REGIONS = tcat.TENDER_REGIONS;
   next();
 });
-app.use((req, res, next) => { res.locals.isAdmin = admin.isAdmin(res.locals.user); res.locals.assetVersion = ASSET_VERSION; next(); });
+app.use((req, res, next) => { res.locals.isAdmin = admin.isAdmin(res.locals.user); res.locals.assetVersion = ASSET_VERSION; res.locals.antispamToken = antispam.formToken(); next(); });
 
 // --- Audit log: každá požiadavka (bez statiky) do activity_events ---
 app.use((req, res, next) => {
@@ -581,7 +582,7 @@ app.get('/objednavka', async (req, res) => {
   res.render('objednavka', { title: 'Nezáväzná objednávka', service, vyzva, tender, error: null, values: {} });
 });
 
-app.post('/objednavka', async (req, res) => {
+app.post('/objednavka', antispam.guard({ minMs: 3000 }), async (req, res) => {
   const service = SERVICES.find((s) => s.slug === req.body.sluzba) || SERVICES[0];
   const values = {
     name: String(req.body.name || '').trim(),
@@ -668,7 +669,7 @@ app.get('/grantovy-radar', (req, res) =>
   res.render('radar', { title: 'Radar', ok: false, sent: false, devLink: null, error: null, values: {} })
 );
 
-app.post('/grantovy-radar', async (req, res) => {
+app.post('/grantovy-radar', antispam.guard({ minMs: 3000 }), async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const cats = [].concat(req.body.kategorie || []).filter((c) => CATEGORIES.includes(c));
   const tinds = [].concat(req.body.odvetvia || []).filter((k) => tcat.INDUSTRY_LABELS[k]);
@@ -741,7 +742,13 @@ for (const seg of SEGMENTS) {
 app.get('/ako-fungujeme', (req, res) => res.render('ako-fungujeme', { title: 'Ako fungujeme' }));
 app.get('/faq', (req, res) => res.render('faq', { title: 'Časté otázky' }));
 app.get('/kontakt', (req, res) => res.render('kontakt', { title: 'Kontakt', ok: req.query.ok === '1', error: null, values: {} }));
-app.post('/kontakt', async (req, res) => {
+app.post('/kontakt', antispam.guard({
+  minMs: 3000,
+  heuristics: [
+    // náhodné reťazce v mene aj správe (typický bot: „vnhhphvgvf“)
+    (b) => (antispam.looksGibberish(b.name) && antispam.looksGibberish(b.message)) ? 'gibberish' : null,
+  ],
+}), async (req, res) => {
   const values = {
     name: String(req.body.name || '').trim(),
     email: String(req.body.email || '').trim().toLowerCase(),

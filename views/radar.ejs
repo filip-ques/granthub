@@ -36,6 +36,7 @@
       <% } %>
 
       <form method="post" action="/grantovy-radar" class="panel" novalidate>
+      <%- include('partials/antispam') %>
         <div class="field">
           <label for="r-email">Váš e-mail *</label>
           <input id="r-email" name="email" type="email" autocomplete="email" required value="<%= values.email || (user ? user.email : '') %>">
