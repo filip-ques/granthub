@@ -5,9 +5,87 @@
   <div>
     <div class="panel-head">
       <h1 style="font-size:1.7rem;margin:0">Zachytený spam</h1>
-      <span class="small muted"><%= stats.za_24h %> pokusov za 24 h · spolu <%= stats.spolu.toLocaleString('sk-SK') %></span>
+      <span class="small muted">alert sa posiela automaticky pri náraste nad 20 pokusov/24 h</span>
     </div>
-    <p class="small muted">Pokusy botov zablokované ochranou formulárov (honeypot, časová pasca, heuristiky). Bot dostane falošné potvrdenie, aby sa nemal z čoho učiť.</p>
+
+    <!-- KPI -->
+    <div class="kpis" style="margin-bottom:1.3rem">
+      <div class="kpi"><div class="num"><%= stats.dnes %></div><div class="lbl">dnes</div></div>
+      <div class="kpi"><div class="num"><%= stats.za_7d %></div><div class="lbl">za 7 dní</div></div>
+      <div class="kpi"><div class="num"><%= stats.za_30d %></div><div class="lbl">za 30 dní · <%= stats.ip_30d %> IP</div></div>
+      <div class="kpi"><div class="num"><%= stats.spolu.toLocaleString('sk-SK') %></div><div class="lbl">spolu od spustenia</div></div>
+    </div>
+
+    <!-- Trend 30 dní -->
+    <div class="panel" style="margin-bottom:1.3rem">
+      <h3 style="margin:0 0 .8rem;font-size:1rem">Pokusy za posledných 30 dní</h3>
+      <%
+        const maxN = Math.max(1, ...denny.map(d => d.n));
+        const bw = 100 / denny.length;                 // šírka stĺpca v %
+        const fmtD = (d) => new Date(d).toLocaleDateString('sk-SK', { day: 'numeric', month: 'numeric' });
+      %>
+      <svg viewBox="0 0 600 140" width="100%" height="140" role="img" aria-label="Denný počet zachytených spam pokusov za 30 dní">
+        <% denny.forEach((d, i) => {
+             const h = d.n === 0 ? 0 : Math.max(4, Math.round(d.n / maxN * 110));
+             const x = (i * 600 / denny.length) + 1;
+             const w = (600 / denny.length) - 2;
+        %>
+          <% if (d.n > 0) { %>
+            <rect x="<%= x %>" y="<%= 122 - h %>" width="<%= w %>" height="<%= h %>" rx="2" fill="#004494">
+              <title><%= fmtD(d.den) %>: <%= d.n %> <%= d.n === 1 ? 'pokus' : d.n < 5 ? 'pokusy' : 'pokusov' %></title>
+            </rect>
+            <% if (d.n === maxN) { %>
+              <text x="<%= x + w / 2 %>" y="<%= Math.max(12, 116 - h) %>" text-anchor="middle" font-size="11" fill="#404040" font-weight="bold"><%= d.n %></text>
+            <% } %>
+          <% } else { %>
+            <rect x="<%= x %>" y="120" width="<%= w %>" height="2" fill="#ececed"><title><%= fmtD(d.den) %>: 0</title></rect>
+          <% } %>
+        <% }) %>
+        <line x1="0" y1="122.5" x2="600" y2="122.5" stroke="#d5d5d5" stroke-width="1"/>
+        <text x="1" y="136" font-size="10" fill="#707070"><%= fmtD(denny[0].den) %></text>
+        <text x="599" y="136" text-anchor="end" font-size="10" fill="#707070">dnes (<%= fmtD(denny[denny.length-1].den) %>)</text>
+      </svg>
+    </div>
+
+    <!-- Rozpady -->
+    <div class="grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.3rem">
+      <div class="panel">
+        <h3 style="margin:0 0 .6rem;font-size:.95rem">Podľa dôvodu (30 d)</h3>
+        <% const maxR = Math.max(1, ...dovody.map(r => r.n)); %>
+        <% if (!dovody.length) { %><p class="small muted mb0">Zatiaľ nič.</p><% } %>
+        <% for (const r of dovody) { %>
+          <div class="small" style="margin-bottom:.45rem">
+            <div style="display:flex;justify-content:space-between"><span><%= r.reason %></span><strong><%= r.n %></strong></div>
+            <div style="background:#ececed;height:6px"><div style="background:#004494;height:6px;width:<%= Math.max(2, Math.round(r.n / maxR * 100)) %>%"></div></div>
+          </div>
+        <% } %>
+      </div>
+      <div class="panel">
+        <h3 style="margin:0 0 .6rem;font-size:.95rem">Podľa formulára (30 d)</h3>
+        <% const maxF = Math.max(1, ...formulare.map(f => f.n)); %>
+        <% if (!formulare.length) { %><p class="small muted mb0">Zatiaľ nič.</p><% } %>
+        <% for (const f of formulare) { %>
+          <div class="small" style="margin-bottom:.45rem">
+            <div style="display:flex;justify-content:space-between"><span class="mono"><%= f.path %></span><strong><%= f.n %></strong></div>
+            <div style="background:#ececed;height:6px"><div style="background:#004494;height:6px;width:<%= Math.max(2, Math.round(f.n / maxF * 100)) %>%"></div></div>
+          </div>
+        <% } %>
+      </div>
+      <div class="panel">
+        <h3 style="margin:0 0 .6rem;font-size:.95rem">Top IP adresy (30 d)</h3>
+        <% if (!topIp.length) { %><p class="small muted mb0">Zatiaľ nič.</p><% } %>
+        <table class="t" style="font-size:.8rem">
+          <tbody>
+            <% for (const ip of topIp) { %>
+              <tr><td class="mono small"><%= ip.ip %></td><td><strong><%= ip.n %></strong></td><td class="small muted"><%= new Date(ip.posledny).toLocaleDateString('sk-SK') %></td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Posledné udalosti -->
+    <h3 style="font-size:1rem">Posledné zachytené pokusy</h3>
     <% if (!events.length) { %>
       <div class="empty"><h3>Zatiaľ žiadny zachytený spam</h3><p>Ochrana beží — zachytené pokusy sa zobrazia tu.</p></div>
     <% } else { %>

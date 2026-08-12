@@ -859,7 +859,9 @@ app.post('/cron/radar', cronAuth, async (req, res, next) => {
   try {
     const stats = await runRadar();
     console.log('[cron] radar:', JSON.stringify(stats));
-    res.json(stats);
+    // Kontrola anomálií antispamu (max 1 alert / 24 h)
+    const spam = await antispam.spikeCheck().catch((e) => { console.error('[cron] spam-check:', e.message); return null; });
+    res.json({ ...stats, spamCheck: spam });
   } catch (e) { next(e); }
 });
 

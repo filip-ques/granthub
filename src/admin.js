@@ -161,13 +161,36 @@ router.get('/admin/pouzivatelia', async (req, res) => {
 });
 
 router.get('/admin/spam', async (req, res) => {
-  const { rows: events } = await pool.query(
-    `SELECT * FROM spam_events ORDER BY created_at DESC LIMIT 200`);
-  const { rows: [stats] } = await pool.query(
-    `SELECT count(*)::int AS spolu,
-       count(*) FILTER (WHERE created_at > now() - interval '24 hours')::int AS za_24h
-     FROM spam_events`);
-  res.render('admin/spam', { title: 'Admin — spam', events, stats });
+  const [eventsQ, statsQ, dennyQ, dovodyQ, formulareQ, ipQ] = await Promise.all([
+    pool.query(`SELECT * FROM spam_events ORDER BY created_at DESC LIMIT 100`),
+    pool.query(
+      `SELECT count(*)::int AS spolu,
+         count(*) FILTER (WHERE created_at > now()::date)::int AS dnes,
+         count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS za_7d,
+         count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS za_30d,
+         count(DISTINCT ip) FILTER (WHERE created_at > now() - interval '30 days')::int AS ip_30d
+       FROM spam_events`),
+    // denný trend za 30 dní vrátane núl
+    pool.query(
+      `SELECT g.d::date AS den, count(s.id)::int AS n
+       FROM generate_series(now()::date - 29, now()::date, '1 day') AS g(d)
+       LEFT JOIN spam_events s ON s.created_at::date = g.d::date
+       GROUP BY g.d ORDER BY g.d`),
+    pool.query(
+      `SELECT reason, count(*)::int AS n FROM spam_events
+       WHERE created_at > now() - interval '30 days' GROUP BY reason ORDER BY n DESC`),
+    pool.query(
+      `SELECT path, count(*)::int AS n FROM spam_events
+       WHERE created_at > now() - interval '30 days' GROUP BY path ORDER BY n DESC`),
+    pool.query(
+      `SELECT ip, count(*)::int AS n, max(created_at) AS posledny FROM spam_events
+       WHERE created_at > now() - interval '30 days' GROUP BY ip ORDER BY n DESC LIMIT 10`),
+  ]);
+  res.render('admin/spam', {
+    title: 'Admin — spam',
+    events: eventsQ.rows, stats: statsQ.rows[0], denny: dennyQ.rows,
+    dovody: dovodyQ.rows, formulare: formulareQ.rows, topIp: ipQ.rows,
+  });
 });
 
 router.get('/admin/aktivita', async (req, res) => {
