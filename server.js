@@ -455,35 +455,67 @@ const DM_LIMIT_DOPRAVA = 100000; // cestná nákladná doprava (do 31.12.2023, p
 
 app.get('/ucet/deminimis', auth.requireLogin, async (req, res) => {
   const u = res.locals.user;
-  const { lookupByIco } = require('./src/semp-bulk');
-  const ico = u && u.ico ? String(u.ico).replace(/\\D/g, '') : '';
+  const { lookupByIcos } = require('./src/semp-bulk');
+  const ico = u && u.ico ? String(u.ico).replace(/\D/g, '') : '';
 
-  // Ručné záznamy používateľa + oficiálny register (okamžite z lokálnej tabuľky)
-  const [{ rows: manual }, registry] = await Promise.all([
+  // Ručné záznamy používateľa + prepojené firmy (jediný podnik zdieľa limit)
+  const [{ rows: manual }, { rows: linked }] = await Promise.all([
     pool.query("SELECT * FROM deminimis_aids WHERE user_id = $1 AND source = 'manual' ORDER BY granted_at DESC", [req.session.userId]),
-    ico ? lookupByIco(ico) : Promise.resolve([]),
+    pool.query('SELECT * FROM deminimis_linked WHERE user_id = $1 ORDER BY created_at', [req.session.userId]),
   ]);
+  const groupIcos = [ico, ...linked.map((l) => l.ico)].filter(Boolean);
+  const registry = await lookupByIcos(groupIcos);
+
+  const myCompany = (u && u.company) || '';
+  const linkedNames = new Map(linked.map((l) => [l.ico, l.name]));
+  const companyLabel = (aidIco, registryName) => (aidIco && aidIco === ico
+    ? (myCompany || 'moja firma')
+    : (linkedNames.get(aidIco) || registryName || aidIco || ''));
 
   // Zjednotený zoznam: register (source='register') + ručné (source='manual')
   const aids = [
     ...registry.map((r) => ({
       id: 'r' + r.id, source: 'register', provider: r.provider, scheme_code: r.regulation,
-      note: r.instrument, ico: r.ico, amount_eur: r.amount_eur, granted_at: r.granted_at,
+      note: r.instrument, ico: r.ico, company: companyLabel(r.ico, r.name),
+      amount_eur: r.amount_eur, granted_at: r.granted_at,
     })),
-    ...manual.map((m) => ({ ...m, source: 'manual' })),
+    ...manual.map((m) => ({ ...m, source: 'manual', company: companyLabel(m.ico, '') })),
   ].sort((a, b) => new Date(b.granted_at) - new Date(a.granted_at));
 
   const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 3);
   const inWindow = aids.filter((a) => new Date(a.granted_at) >= cutoff);
   const drawn = inWindow.reduce((s2, a) => s2 + Number(a.amount_eur), 0);
+  const drawnByIco = {};
+  for (const a of inWindow) drawnByIco[a.ico] = (drawnByIco[a.ico] || 0) + Number(a.amount_eur);
   res.render('zona/deminimis', {
     title: 'De minimis kalkulačka',
-    aids, inWindow, drawn,
+    aids, inWindow, drawn, linked, drawnByIco,
     remaining: Math.max(0, DM_LIMIT - drawn),
     limit: DM_LIMIT, cutoff, refreshing: false, ico,
+    company: myCompany,
     registryCount: registry.length,
     savedMsg: req.query.ok === '1',
   });
+});
+
+// Prepojené firmy — s vlastnou firmou tvoria „jediný podnik“ so spoločným limitom
+app.post('/ucet/deminimis/prepojene', auth.requireLogin, async (req, res) => {
+  const { nameByIco } = require('./src/semp-bulk');
+  const ico = String(req.body.ico || '').replace(/\D/g, '').slice(0, 12);
+  if (ico.length >= 6) {
+    const name = String(req.body.name || '').trim().slice(0, 200) || await nameByIco(ico);
+    await pool.query(
+      `INSERT INTO deminimis_linked (user_id, ico, name, relation) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (user_id, ico) DO UPDATE SET name = EXCLUDED.name, relation = EXCLUDED.relation`,
+      [req.session.userId, ico, name, String(req.body.relation || '').trim().slice(0, 60)]);
+  }
+  res.redirect('/ucet/deminimis?ok=1');
+});
+
+app.post('/ucet/deminimis/prepojene/:id/zmazat', auth.requireLogin, async (req, res) => {
+  await pool.query('DELETE FROM deminimis_linked WHERE id = $1 AND user_id = $2',
+    [Number(req.params.id) || 0, req.session.userId]);
+  res.redirect('/ucet/deminimis');
 });
 
 app.post('/ucet/deminimis', auth.requireLogin, async (req, res) => {

@@ -116,13 +116,25 @@ async function runSempBulk(force = false) {
   return { imported: records.length };
 }
 
-// Okamžité vyhľadanie čerpania podľa IČO z lokálnej tabuľky
-async function lookupByIco(ico) {
-  const clean = String(ico || '').replace(/\D/g, '');
-  if (clean.length < 6) return [];
+// Okamžité vyhľadanie čerpania z lokálnej tabuľky pre jedno alebo viac IČO
+// (jediný podnik = vlastná firma + prepojené firmy)
+async function lookupByIcos(icos) {
+  const clean = [...new Set([].concat(icos)
+    .map((i) => String(i || '').replace(/\D/g, ''))
+    .filter((i) => i.length >= 6))];
+  if (!clean.length) return [];
   const { rows } = await pool.query(
-    `SELECT * FROM semp_registry WHERE ico = $1 ORDER BY granted_at DESC`, [clean]);
+    `SELECT * FROM semp_registry WHERE ico = ANY($1) ORDER BY granted_at DESC`, [clean]);
   return rows;
 }
 
-module.exports = { runSempBulk, lookupByIco };
+// Názov firmy z registra (na predvyplnenie prepojenej firmy)
+async function nameByIco(ico) {
+  const clean = String(ico || '').replace(/\D/g, '');
+  if (clean.length < 6) return '';
+  const { rows } = await pool.query(
+    `SELECT name FROM semp_registry WHERE ico = $1 AND name <> '' LIMIT 1`, [clean]);
+  return rows.length ? rows[0].name : '';
+}
+
+module.exports = { runSempBulk, lookupByIcos, nameByIco };

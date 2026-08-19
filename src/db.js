@@ -155,6 +155,17 @@ async function init() {
     );
     CREATE INDEX IF NOT EXISTS ix_deminimis_user ON deminimis_aids (user_id, granted_at DESC);
 
+    -- "Jediný podnik" podľa nariadenia (EÚ) 2023/2831: prepojené firmy zdieľajú jeden limit
+    CREATE TABLE IF NOT EXISTS deminimis_linked (
+      id         SERIAL PRIMARY KEY,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      ico        TEXT NOT NULL,
+      name       TEXT NOT NULL DEFAULT '',
+      relation   TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (user_id, ico)
+    );
+
     CREATE TABLE IF NOT EXISTS activity_events (
       id          SERIAL PRIMARY KEY,
       user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
