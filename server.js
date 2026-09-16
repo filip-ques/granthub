@@ -866,16 +866,27 @@ function cronAuth(req, res, next) {
   res.status(401).json({ error: 'unauthorized' });
 }
 
-app.post('/cron/ingest', cronAuth, async (req, res, next) => {
-  try {
-    const stats = await runIngest();
-    const scraped = await runScrapers();
-    const company = await runCompanyRefresh().catch((e) => ({ error: e.message }));
-    const ai = await runAiDescriptions().catch((e) => ({ error: e.message }));
-    const aiDetails = await runAiDetails().catch((e) => ({ error: e.message }));
-    console.log('[cron] ingest:', JSON.stringify({ itms: stats, ...scraped, company, ai, aiDetails }));
-    res.json({ itms: stats, ...scraped, company, ai, aiDetails });
-  } catch (e) { next(e); }
+app.post('/cron/ingest', cronAuth, async (req, res) => {
+  // Každý krok beží izolovane — pád jedného zdroja nesmie zastaviť ostatné
+  // (od 7.7. do 16.9.2026 padal ITMS a strhol so sebou všetky scrapery).
+  // Chyby sa evidujú v job_state (cron_ingest_error), nech sú viditeľné aj z admina.
+  const step = async (name, fn) => {
+    try { return await fn(); } catch (e) {
+      console.error(`[cron] ${name} zlyhal:`, e.message);
+      pool.query(
+        `INSERT INTO job_state (key, value, updated_at) VALUES ($1, $2, now())
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+        [`cron_error_${name}`, String(e.message).slice(0, 300)]).catch(() => {});
+      return { error: e.message };
+    }
+  };
+  const itms = await step('itms', runIngest);
+  const scraped = await step('scrape', runScrapers);
+  const company = await step('company', runCompanyRefresh);
+  const ai = await step('ai', runAiDescriptions);
+  const aiDetails = await step('ai_details', runAiDetails);
+  console.log('[cron] ingest:', JSON.stringify({ itms, ...scraped, company, ai, aiDetails }));
+  res.json({ itms, ...scraped, company, ai, aiDetails });
 });
 
 app.post('/cron/tendre', cronAuth, async (req, res, next) => {
